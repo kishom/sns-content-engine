@@ -1,0 +1,12 @@
+# 生成される配信キュー（export.mjs の出力・再生成可能）
+content/**/queue.json
+content/*.queue.json
+
+# 認証情報・環境変数（絶対にコミットしない）
+.env
+.env.*
+*.local
+
+# OS / エディタ
+.DS_Store
+node_modules/

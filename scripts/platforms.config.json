@@ -1,0 +1,40 @@
+{
+  "brand": "ネコネコ & イヌイヌ",
+  "aspectRatio": "9:16",
+  "reviewGateRequired": true,
+  "platforms": {
+    "instagram_reels": {
+      "enabled": true,
+      "maxDurationSec": 90,
+      "recommendedDurationSec": [15, 60],
+      "postTimeJST": "20:00",
+      "hashtags": ["#犬のいる暮らし", "#猫のいる生活", "#ペットの健康", "#獣医師監修"],
+      "captionStyle": "1行目に保存誘導。絵文字控えめ・共感トーン"
+    },
+    "tiktok": {
+      "enabled": true,
+      "maxDurationSec": 180,
+      "recommendedDurationSec": [15, 60],
+      "postTimeJST": "21:00",
+      "hashtags": ["#犬", "#猫", "#ペット", "#夏のペットケア"],
+      "captionStyle": "字幕必須・テンポ重視。冒頭フックを字幕でも強調"
+    },
+    "youtube_shorts": {
+      "enabled": true,
+      "maxDurationSec": 60,
+      "recommendedDurationSec": [30, 60],
+      "postTimeJST": "19:00",
+      "hashtags": ["#shorts", "#ペット", "#犬", "#猫"],
+      "captionStyle": "検索最適化。タイトルにテーマ+犬猫を含める"
+    },
+    "line_voom": {
+      "enabled": false,
+      "note": "対応可能になったら enabled:true。国内フォロワー向け・丁寧め・受診導線を明確に",
+      "maxDurationSec": 60,
+      "recommendedDurationSec": [15, 45],
+      "postTimeJST": "12:00",
+      "hashtags": ["#ペット", "#熱中症対策"],
+      "captionStyle": "丁寧め・受診導線を明確に"
+    }
+  }
+}
