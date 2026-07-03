@@ -2,6 +2,11 @@
 content/**/queue.json
 content/*.queue.json
 
+# 生成される動画・画像（render.mjs の出力・再生成可能）
+*.mp4
+*.png
+.render/
+
 # 認証情報・環境変数（絶対にコミットしない）
 .env
 .env.*
