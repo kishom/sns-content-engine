@@ -7,6 +7,9 @@ content/*.queue.json
 *.png
 .render/
 
+# ビルドマニフェスト（build.mjs の出力・再生成可能）
+content/build-manifest.json
+
 # 認証情報・環境変数（絶対にコミットしない）
 .env
 .env.*
