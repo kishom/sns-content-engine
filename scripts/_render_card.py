@@ -10,10 +10,14 @@ FONTS = [
     "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
     "/System/Library/Fonts/Hiragino Sans GB.ttc",
 ]
-OUT = (74, 59, 42)        # 輪郭・濃い茶
-CAT_BODY = (236, 230, 220)
-DOG_BODY = (228, 201, 160)
-PINK = (232, 160, 160)
+OUT = (74, 59, 42)          # 輪郭・濃い茶 #4A3B2A
+CAT_BODY = (239, 233, 223)  # #EFE9DF
+CAT_PATCH = (191, 180, 164) # #BFB4A4 灰ぶち
+DOG_BODY = (228, 201, 160)  # #E4C9A0
+DOG_EAR = (143, 107, 68)    # #8F6B44 こげ茶耳
+DOG_PATCH = (198, 168, 128) # #C6A880 背中の柄
+PINK = (232, 160, 160)      # #E8A0A0
+BLUSH = (242, 184, 184)     # #F2B8B8
 
 def load(size):
     for f in FONTS:
@@ -49,61 +53,85 @@ def draw_block(draw, W, lines, font, cy, color, spacing):
         draw.text(((W - w) / 2, y), ln, font=font, fill=color)
         y += lh
 
-def halo(d, cx, cy, r):
-    d.ellipse([cx - r * 1.25, cy - r * 1.25, cx + r * 1.25, cy + r * 1.25],
+def halo(d, cx, cy, rx, ry):
+    d.ellipse([cx - rx * 1.3, cy - ry * 1.22, cx + rx * 1.3, cy + ry * 1.22],
               fill=(255, 255, 255))
 
-def draw_cat(d, cx, cy, r, active):
+# 確定デザイン（案B-4 もちもち豆マスコット・ぶち模様）。docs/character.md / prompts/05-visual.md が正本。
+def draw_cat(d, cx, cy, s, active):
+    rx, ry = 0.8 * s, 1.0 * s
     if active:
-        halo(d, cx, cy, r)
-    # 耳
+        halo(d, cx, cy, rx, ry)
+    # 耳（左=灰ぶち #BFB4A4）
+    for sx, col in ((-1, CAT_PATCH), (1, CAT_BODY)):
+        d.polygon([(cx + sx * 0.52 * s, cy - 0.76 * s),
+                   (cx + sx * 0.66 * s, cy - 1.24 * s),
+                   (cx + sx * 0.14 * s, cy - 0.97 * s)], fill=col, outline=OUT, width=5)
+    # しっぽ玉（右・体の後ろに半分隠す）
+    d.ellipse([cx + 0.62 * s, cy + 0.3 * s, cx + 1.02 * s, cy + 0.68 * s],
+              fill=CAT_PATCH, outline=OUT, width=5)
+    # 豆型ボディ
+    d.ellipse([cx - rx, cy - ry, cx + rx, cy + ry], fill=CAT_BODY, outline=OUT, width=6)
+    # 左頭のぶち＋右下ボディの斑
+    d.chord([cx - 0.8 * s, cy - 1.0 * s, cx + 0.05 * s, cy - 0.2 * s], 150, 330, fill=CAT_PATCH)
+    d.ellipse([cx + 0.24 * s, cy + 0.32 * s, cx + 0.62 * s, cy + 0.6 * s], fill=CAT_PATCH)
+    # 点目・鼻・ω口
     for sx in (-1, 1):
-        d.polygon([(cx + sx * 0.75 * r, cy - 0.45 * r),
-                   (cx + sx * 1.0 * r, cy - 1.15 * r),
-                   (cx + sx * 0.15 * r, cy - 0.85 * r)], fill=CAT_BODY, outline=OUT, width=5)
-    # 顔
-    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=CAT_BODY, outline=OUT, width=6)
-    # 目（のんびり半目 = 下向きアーチ）
+        d.ellipse([cx + sx * 0.28 * s - 0.075 * s, cy - 0.44 * s,
+                   cx + sx * 0.28 * s + 0.075 * s, cy - 0.29 * s], fill=OUT)
+    d.polygon([(cx - 0.06 * s, cy - 0.16 * s), (cx + 0.06 * s, cy - 0.16 * s), (cx, cy - 0.07 * s)], fill=PINK)
+    d.arc([cx - 0.16 * s, cy - 0.14 * s, cx, cy + 0.02 * s], 20, 160, fill=OUT, width=4)
+    d.arc([cx, cy - 0.14 * s, cx + 0.16 * s, cy + 0.02 * s], 20, 160, fill=OUT, width=4)
+    # ほっぺ
     for sx in (-1, 1):
-        ex = cx + sx * 0.38 * r
-        d.arc([ex - 0.2 * r, cy - 0.2 * r, ex + 0.2 * r, cy + 0.1 * r], 200, 340, fill=OUT, width=7)
-    # 鼻
-    d.polygon([(cx - 0.1 * r, cy + 0.15 * r), (cx + 0.1 * r, cy + 0.15 * r), (cx, cy + 0.3 * r)], fill=PINK)
-    # ひげ
+        d.ellipse([cx + sx * 0.52 * s - 0.11 * s, cy - 0.12 * s,
+                   cx + sx * 0.52 * s + 0.11 * s, cy + 0.1 * s], fill=BLUSH)
+    # 手足
     for sx in (-1, 1):
-        for dy in (-0.05, 0.1):
-            d.line([(cx + sx * 0.25 * r, cy + 0.2 * r + dy * r),
-                    (cx + sx * 0.95 * r, cy + 0.12 * r + dy * r)], fill=OUT, width=3)
+        d.ellipse([cx + sx * 0.28 * s - 0.18 * s, cy + 0.85 * s,
+                   cx + sx * 0.28 * s + 0.18 * s, cy + 1.08 * s], fill=CAT_BODY, outline=OUT, width=5)
 
-def draw_dog(d, cx, cy, r, active):
+def draw_dog(d, cx, cy, s, active):
+    rx, ry = 0.8 * s, 1.0 * s
     if active:
-        halo(d, cx, cy, r)
-    # 垂れ耳（顔の後ろ）
+        halo(d, cx, cy, rx, ry)
+    # こげ茶垂れ耳 #8F6B44
     for sx in (-1, 1):
-        d.ellipse([cx + sx * 1.15 * r - 0.3 * r, cy - 0.5 * r,
-                   cx + sx * 1.15 * r + 0.3 * r, cy + 0.75 * r],
-                  fill=(198, 168, 128), outline=OUT, width=5)
-    # 顔
-    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=DOG_BODY, outline=OUT, width=6)
-    # 目（ぱっちり）
+        d.ellipse([cx + sx * 0.72 * s - 0.24 * s, cy - 1.05 * s,
+                   cx + sx * 0.72 * s + 0.24 * s, cy - 0.1 * s], fill=DOG_EAR, outline=OUT, width=5)
+    # しっぽ玉（左・体の後ろに半分隠す）
+    d.ellipse([cx - 1.02 * s, cy + 0.24 * s, cx - 0.62 * s, cy + 0.62 * s],
+              fill=DOG_EAR, outline=OUT, width=5)
+    # 豆型ボディ
+    d.ellipse([cx - rx, cy - ry, cx + rx, cy + ry], fill=DOG_BODY, outline=OUT, width=6)
+    # 左下背中の柄 #C6A880
+    d.ellipse([cx - 0.64 * s, cy + 0.3 * s, cx - 0.08 * s, cy + 0.72 * s], fill=DOG_PATCH)
+    # まゆ点・点目・鼻・にこ口
     for sx in (-1, 1):
-        ex = cx + sx * 0.34 * r
-        d.ellipse([ex - 0.14 * r, cy - 0.18 * r, ex + 0.14 * r, cy + 0.1 * r], fill=OUT)
-        d.ellipse([ex - 0.02 * r, cy - 0.12 * r, ex + 0.06 * r, cy - 0.04 * r], fill=(255, 255, 255))
-    # 鼻
-    d.ellipse([cx - 0.16 * r, cy + 0.12 * r, cx + 0.16 * r, cy + 0.32 * r], fill=OUT)
-    # 舌
-    d.rounded_rectangle([cx - 0.12 * r, cy + 0.34 * r, cx + 0.12 * r, cy + 0.6 * r],
-                        radius=0.1 * r, fill=PINK)
+        d.ellipse([cx + sx * 0.28 * s - 0.05 * s, cy - 0.72 * s,
+                   cx + sx * 0.28 * s + 0.05 * s, cy - 0.62 * s], fill=OUT)
+        d.ellipse([cx + sx * 0.28 * s - 0.075 * s, cy - 0.48 * s,
+                   cx + sx * 0.28 * s + 0.075 * s, cy - 0.33 * s], fill=OUT)
+    d.ellipse([cx - 0.1 * s, cy - 0.28 * s, cx + 0.1 * s, cy - 0.12 * s], fill=OUT)
+    d.arc([cx - 0.16 * s, cy - 0.18 * s, cx + 0.16 * s, cy + 0.06 * s], 20, 160, fill=OUT, width=4)
+    # ほっぺ
+    for sx in (-1, 1):
+        d.ellipse([cx + sx * 0.52 * s - 0.11 * s, cy - 0.2 * s,
+                   cx + sx * 0.52 * s + 0.11 * s, cy + 0.02 * s], fill=BLUSH)
+    # 手足
+    for sx in (-1, 1):
+        d.ellipse([cx + sx * 0.28 * s - 0.18 * s, cy + 0.85 * s,
+                   cx + sx * 0.28 * s + 0.18 * s, cy + 1.08 * s], fill=DOG_BODY, outline=OUT, width=5)
 
 def draw_duo(d, W, serifu):
     cat_on = "ネコ:" in serifu
     dog_on = "イヌ:" in serifu
     if not cat_on and not dog_on:   # テロップのみのカットは両方ふつう表示
         cat_on = dog_on = True
-    cy, r = 300, 132
-    draw_cat(d, W / 2 - 170, cy, r, cat_on)
-    draw_dog(d, W / 2 + 170, cy, r, dog_on)
+    cy, s = 330, 150
+    # 正本レイアウト：ネコ左・イヌ右（05-visual.md）
+    draw_cat(d, W / 2 - 175, cy, s, cat_on)
+    draw_dog(d, W / 2 + 175, cy, s, dog_on)
 
 def main():
     data = json.load(open(sys.argv[1], encoding="utf-8"))
