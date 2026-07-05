@@ -63,7 +63,12 @@ function clean(s = "") {
 
 const scenes = rows.map((c) => {
   const m = c[0].match(/(\d+)\s*-\s*(\d+)\s*s/);
-  return { dur: Math.max(1, Number(m[2]) - Number(m[1])), serifu: clean(c[1]), telop: clean(c[2]) };
+  return {
+    dur: Math.max(1, Number(m[2]) - Number(m[1])),
+    serifu: clean(c[1]),
+    telop: clean(c[2]),
+    vis: clean(c[3] || ""), // ビジュアル指示列 → 表情の決定に使う
+  };
 });
 
 // --- 作業ディレクトリ ---
@@ -78,6 +83,7 @@ const cardSpec = {
     bg: PALETTE[i % PALETTE.length],
     telop: sc.telop || " ",
     serifu: sc.serifu || " ",
+    vis: sc.vis || "",
     out: join(workDir, `card_${i}.png`),
   })),
 };
