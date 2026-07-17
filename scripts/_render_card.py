@@ -31,6 +31,8 @@ def hexrgb(h):
     h = h.lstrip("#")
     return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
 
+EM_COLOR = (198, 70, 55)  # 《強調》の赤（すぐる画伯式キーワード強調）
+
 def wrap(draw, text, font, maxw):
     lines, cur = [], ""
     for ch in text:
@@ -44,6 +46,18 @@ def wrap(draw, text, font, maxw):
         lines.append(cur)
     return lines or [" "]
 
+def parse_em(text):
+    """《強調》を(文字, 強調フラグ)列に分解"""
+    out, em = [], False
+    for ch in text:
+        if ch == "《":
+            em = True
+        elif ch == "》":
+            em = False
+        else:
+            out.append((ch, em))
+    return out or [(" ", False)]
+
 def draw_block(draw, W, lines, font, cy, color, spacing):
     asc, desc = font.getmetrics()
     lh = asc + desc + spacing
@@ -51,6 +65,27 @@ def draw_block(draw, W, lines, font, cy, color, spacing):
     for ln in lines:
         w = draw.textlength(ln, font=font)
         draw.text(((W - w) / 2, y), ln, font=font, fill=color)
+        y += lh
+
+def draw_block_em(draw, W, chars, font, cy, color, spacing, maxw):
+    """《》赤字強調つきの中央寄せブロック描画（文字単位）"""
+    lines, cur, curw = [], [], 0.0
+    for ch, em in chars:
+        cw = draw.textlength(ch, font=font)
+        if curw + cw > maxw and cur:
+            lines.append(cur); cur, curw = [], 0.0
+        cur.append((ch, em)); curw += cw
+    if cur:
+        lines.append(cur)
+    asc, desc = font.getmetrics()
+    lh = asc + desc + spacing
+    y = cy - lh * len(lines) / 2
+    for ln in lines:
+        total = sum(draw.textlength(c, font=font) for c, _ in ln)
+        x = (W - total) / 2
+        for ch, em in ln:
+            draw.text((x, y), ch, font=font, fill=EM_COLOR if em else color)
+            x += draw.textlength(ch, font=font)
         y += lh
 
 def halo(d, cx, cy, rx, ry):
@@ -203,12 +238,16 @@ def draw_dog(d, cx, cy, s, active, expr="normal", mouth_open=False):
         d.ellipse([cx + sx * 0.28 * s - 0.18 * s, cy + 0.85 * s,
                    cx + sx * 0.28 * s + 0.18 * s, cy + 1.08 * s], fill=DOG_BODY, outline=OUT, width=5)
 
-def draw_duo(d, W, serifu, vis="", phase=0):
+def draw_duo(d, W, serifu, vis="", phase=0, bg=(253, 233, 217)):
     cat_on = "ネコ:" in serifu
     dog_on = "イヌ:" in serifu
     if not cat_on and not dog_on:   # テロップのみのカットは両方ふつう表示
         cat_on = dog_on = True
     cy, s = 330, 150
+    # 足元の影（接地感）。背景色を少し暗くした楕円
+    shadow = tuple(int(c * 0.90) for c in bg)
+    for cx in (W / 2 - 175, W / 2 + 175):
+        d.ellipse([cx - 0.85 * s, cy + 1.0 * s, cx + 0.85 * s, cy + 1.2 * s], fill=shadow)
     # 正本レイアウト：ネコ左・イヌ右（05-visual.md）。表情はビジュアル指示列から。
     # phase=1: 話者は口パク（開）＋ぴょこっと浮く 2コマアニメの2枚目。
     bob = -10 if phase else 0
@@ -224,11 +263,13 @@ def main():
     for sc in data["scenes"]:
         outs = sc.get("outs") or [sc["out"]]
         for phase, out in enumerate(outs):
-            img = Image.new("RGB", (W, H), hexrgb(sc["bg"]))
+            bg = hexrgb(sc["bg"])
+            img = Image.new("RGB", (W, H), bg)
             d = ImageDraw.Draw(img)
-            draw_duo(d, W, sc["serifu"], sc.get("vis", ""), phase)
-            draw_block(d, W, wrap(d, sc["telop"], tf, W - 160), tf, H * 0.44, (74, 59, 42), 24)
-            draw_block(d, W, wrap(d, sc["serifu"], sf, W - 160), sf, H - 300, (138, 109, 79), 14)
+            draw_duo(d, W, sc["serifu"], sc.get("vis", ""), phase, bg)
+            draw_block_em(d, W, parse_em(sc["telop"]), tf, H * 0.44, (74, 59, 42), 24, W - 160)
+            serifu_plain = sc["serifu"].replace("《", "").replace("》", "")
+            draw_block(d, W, wrap(d, serifu_plain, sf, W - 160), sf, H - 300, (138, 109, 79), 14)
             img.save(out)
     print(f"ok {len(data['scenes'])}")
 

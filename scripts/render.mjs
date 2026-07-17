@@ -62,9 +62,10 @@ const rows = md.split("\n")
   .filter((c) => c.length >= 3 && /\d+\s*-\s*\d+\s*s/.test(c[0]));
 if (!rows.length) fail("場面テーブル（| 時間 | セリフ | テロップ | …）が見つかりません");
 
-// 表示用テキスト（絵文字除去・話者名短縮）
+// 表示用テキスト（絵文字除去・話者名短縮）。**強調** は《》に変換して赤字描画へ渡す。
 function clean(s = "") {
   return s
+    .replace(/\*\*([^*]+)\*\*/g, "《$1》")
     .replace(/\*\*/g, "")
     .replace(/🐶/g, "イヌ:").replace(/🐱/g, "ネコ:")
     .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{FE0F}]/gu, "")
@@ -75,7 +76,7 @@ function clean(s = "") {
 function speakable(s) {
   return s
     .replace(/①/g, "1つ目。").replace(/②/g, "2つ目。").replace(/③/g, "3つ目。")
-    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}#★→]/gu, "")
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}#★→《》]/gu, "")
     .replace(/[“”"]/g, "")
     .trim();
 }
