@@ -244,8 +244,10 @@ def draw_duo(d, W, serifu, vis="", phase=0, bg=(253, 233, 217)):
     if not cat_on and not dog_on:   # テロップのみのカットは両方ふつう表示
         cat_on = dog_on = True
     cy, s = 330, 150
-    # 足元の影（接地感）。背景色を少し暗くした楕円
+    # 床の帯（シーン感）＋足元の影（接地感）。どちらも背景色を少し暗くしたトーン
+    floor = tuple(int(c * 0.955) for c in bg)
     shadow = tuple(int(c * 0.90) for c in bg)
+    d.rectangle([0, cy + 1.02 * s, W, cy + 1.55 * s], fill=floor)
     for cx in (W / 2 - 175, W / 2 + 175):
         d.ellipse([cx - 0.85 * s, cy + 1.0 * s, cx + 0.85 * s, cy + 1.2 * s], fill=shadow)
     # 正本レイアウト：ネコ左・イヌ右（05-visual.md）。表情はビジュアル指示列から。
