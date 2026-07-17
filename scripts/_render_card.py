@@ -238,42 +238,77 @@ def draw_dog(d, cx, cy, s, active, expr="normal", mouth_open=False):
         d.ellipse([cx + sx * 0.28 * s - 0.18 * s, cy + 0.85 * s,
                    cx + sx * 0.28 * s + 0.18 * s, cy + 1.08 * s], fill=DOG_BODY, outline=OUT, width=5)
 
-def draw_duo(d, W, serifu, vis="", phase=0, bg=(253, 233, 217)):
-    cat_on = "ネコ:" in serifu
-    dog_on = "イヌ:" in serifu
-    if not cat_on and not dog_on:   # テロップのみのカットは両方ふつう表示
-        cat_on = dog_on = True
+CAT_X = -175  # W/2からのオフセット（ネコ左・イヌ右）
+DOG_X = 175
+TALK_BOB = [0, -6, -10, -6]   # 話者の4コマ揺れ
+IDLE_BOB = [0, -4]            # 待機の2コマ呼吸
+
+def draw_duo(d, W, vis="", who=None, phase=0, bg=(253, 233, 217)):
     cy, s = 330, 150
     # 床の帯（シーン感）＋足元の影（接地感）。どちらも背景色を少し暗くしたトーン
     floor = tuple(int(c * 0.955) for c in bg)
     shadow = tuple(int(c * 0.90) for c in bg)
     d.rectangle([0, cy + 1.02 * s, W, cy + 1.55 * s], fill=floor)
-    for cx in (W / 2 - 175, W / 2 + 175):
+    for cx in (W / 2 + CAT_X, W / 2 + DOG_X):
         d.ellipse([cx - 0.85 * s, cy + 1.0 * s, cx + 0.85 * s, cy + 1.2 * s], fill=shadow)
-    # 正本レイアウト：ネコ左・イヌ右（05-visual.md）。表情はビジュアル指示列から。
-    # phase=1: 話者は口パク（開）＋ぴょこっと浮く 2コマアニメの2枚目。
-    bob = -10 if phase else 0
-    draw_cat(d, W / 2 - 175, cy + (bob if cat_on else 0), s, cat_on,
-             cat_expr(vis), mouth_open=bool(phase and cat_on))
-    draw_dog(d, W / 2 + 175, cy + (bob if dog_on else 0), s, dog_on,
-             dog_expr(vis), mouth_open=bool(phase and dog_on))
+    # 話者=4コマ口パク＋大きめ揺れ＋ハロ、相手=静止。待機=2人で小さく呼吸。
+    if who:
+        tb = TALK_BOB[phase % 4]
+        open_ = phase % 2 == 1
+        cat_dy = tb if who == "cat" else 0
+        dog_dy = tb if who == "dog" else 0
+        draw_cat(d, W / 2 + CAT_X, cy + cat_dy, s, who == "cat",
+                 cat_expr(vis), mouth_open=bool(open_ and who == "cat"))
+        draw_dog(d, W / 2 + DOG_X, cy + dog_dy, s, who == "dog",
+                 dog_expr(vis), mouth_open=bool(open_ and who == "dog"))
+    else:
+        ib = IDLE_BOB[phase % 2]
+        draw_cat(d, W / 2 + CAT_X, cy + ib, s, False, cat_expr(vis))
+        draw_dog(d, W / 2 + DOG_X, cy + ib, s, False, dog_expr(vis))
+
+def draw_bubble(d, W, text, who, font):
+    """話者の下に吹き出し（しっぽ付き）でセリフを表示"""
+    sp_cx = W / 2 + (CAT_X if who == "cat" else DOG_X)
+    maxw = W - 340
+    lines = wrap(d, text, font, maxw)
+    asc, desc = font.getmetrics()
+    lh = asc + desc + 10
+    tw = max(d.textlength(ln, font=font) for ln in lines)
+    bw, bh = tw + 96, lh * len(lines) + 52
+    y0 = 620
+    bx = min(max(sp_cx - bw / 2, 50), W - 50 - bw)
+    # しっぽ（本体の前に白面、後で縁線）
+    apex = (sp_cx, y0 - 44)
+    base_l, base_r = (sp_cx - 30, y0 + 8), (sp_cx + 30, y0 + 8)
+    d.polygon([apex, base_l, base_r], fill=(255, 255, 255))
+    d.rounded_rectangle([bx, y0, bx + bw, y0 + bh], radius=30,
+                        fill=(255, 255, 255), outline=OUT, width=4)
+    d.polygon([apex, base_l, base_r], fill=(255, 255, 255))
+    d.line([apex, base_l], fill=OUT, width=4)
+    d.line([apex, base_r], fill=OUT, width=4)
+    y = y0 + 26
+    for ln in lines:
+        lw = d.textlength(ln, font=font)
+        d.text((bx + (bw - lw) / 2, y), ln, font=font, fill=OUT)
+        y += lh
 
 def main():
     data = json.load(open(sys.argv[1], encoding="utf-8"))
     W, H = data["W"], data["H"]
-    tf, sf = load(84), load(46)
-    for sc in data["scenes"]:
-        outs = sc.get("outs") or [sc["out"]]
-        for phase, out in enumerate(outs):
-            bg = hexrgb(sc["bg"])
+    tf, bf = load(84), load(50)
+    n = 0
+    for sh in data["shots"]:
+        bg = hexrgb(sh["bg"])
+        for phase, out in enumerate(sh["outs"]):
             img = Image.new("RGB", (W, H), bg)
             d = ImageDraw.Draw(img)
-            draw_duo(d, W, sc["serifu"], sc.get("vis", ""), phase, bg)
-            draw_block_em(d, W, parse_em(sc["telop"]), tf, H * 0.44, (74, 59, 42), 24, W - 160)
-            serifu_plain = sc["serifu"].replace("《", "").replace("》", "")
-            draw_block(d, W, wrap(d, serifu_plain, sf, W - 160), sf, H - 300, (138, 109, 79), 14)
+            draw_duo(d, W, sh.get("vis", ""), sh.get("who"), phase, bg)
+            if sh.get("bubble"):
+                draw_bubble(d, W, sh["bubble"], sh["who"], bf)
+            draw_block_em(d, W, parse_em(sh["telop"]), tf, H * 0.55, (74, 59, 42), 24, W - 160)
             img.save(out)
-    print(f"ok {len(data['scenes'])}")
+            n += 1
+    print(f"ok {n}")
 
 if __name__ == "__main__":
     main()

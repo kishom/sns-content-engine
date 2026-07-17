@@ -1,17 +1,16 @@
 #!/usr/bin/env node
 // render.mjs — コンテンツ台本(md)の「場面テーブル」から、音声つき9:16ショート動画(mp4)を書き出す。
 //
-// - 映像: カットごとにカードPNG2コマ（口パク＋ぴょこ揺れ）を Pillow(_render_card.py) で生成し、
-//         3fpsで交互再生 → 30fps h264 に。
-// - 音声: セリフ（🐱「…」🐶「…」）を macOS `say` の日本語TTSで読み上げ。
-//         ネコ=ゆっくり低め / イヌ=早口元気。カット尺は音声に合わせて自動延長。
+// - セリフは話者の頭上に吹き出しで1行ずつ表示（TTS音声と同期）。
+// - 話者は4コマの口パク＋ぴょこ揺れ、待機中は2コマの呼吸アニメ。
+// - 音声: macOS `say`(Kyoko)。ネコ=ゆっくり/イヌ=早口。最後に-15LUFSへラウドネス正規化。
 // - 依存: ffmpeg + python3/Pillow + macOS（say / 日本語フォント）。外部APIキー不要。
 //
 // 使い方:
 //   node scripts/render.mjs content/2026-07-02_heatstroke
-//   node scripts/render.mjs content/2026-07-17_bbq-goin.md
+//   node scripts/render.mjs content/2026-07-17_skit-osanpo.md
 //
-// 声の差し替え: NEKO_VOICE / INU_VOICE / NEKO_RATE / INU_RATE 環境変数（例: INU_VOICE=Sandy）
+// 声の差し替え: NEKO_VOICE / INU_VOICE / NEKO_RATE / INU_RATE 環境変数
 
 import { readFileSync, writeFileSync, mkdirSync, rmSync, statSync, readdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -19,13 +18,14 @@ import { join, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const W = 1080, H = 1920, FPS = 30, ANIM_FPS = 3;
+const W = 1080, H = 1920, FPS = 30, ANIM_FPS = 6;
 const PALETTE = ["#FDE9D9", "#E6F2E9", "#E9EEF9", "#F6E9F2", "#FBF3D9"];
 const VOICE = {
   cat: { voice: process.env.NEKO_VOICE || "Kyoko", rate: Number(process.env.NEKO_RATE || 165) },
   dog: { voice: process.env.INU_VOICE || "Kyoko", rate: Number(process.env.INU_RATE || 235) },
 };
-const GAP = 0.3, LEAD = 0.25, TAIL_PAD = 0.45;
+const LINE_PAD = 0.45;   // セリフ間の間（秒）
+const MIN_IDLE = 0.4;    // これ未満の余りは無視
 
 function fail(m) { console.error(`✗ ${m}`); process.exit(1); }
 function ff(args) { execFileSync("ffmpeg", ["-y", ...args], { stdio: ["ignore", "ignore", "pipe"] }); }
@@ -55,14 +55,14 @@ if (st.isDirectory()) {
 
 const md = readFileSync(scriptPath, "utf8");
 
-// --- 場面テーブルを解析（時間セルがある行だけ） ---
+// --- 場面テーブルを解析 ---
 const rows = md.split("\n")
   .filter((l) => l.trim().startsWith("|"))
   .map((l) => l.split("|").slice(1, -1).map((c) => c.trim()))
   .filter((c) => c.length >= 3 && /\d+\s*-\s*\d+\s*s/.test(c[0]));
 if (!rows.length) fail("場面テーブル（| 時間 | セリフ | テロップ | …）が見つかりません");
 
-// 表示用テキスト（絵文字除去・話者名短縮）。**強調** は《》に変換して赤字描画へ渡す。
+// 表示用テキスト。**強調** は《》に変換して赤字描画へ渡す。
 function clean(s = "") {
   return s
     .replace(/\*\*([^*]+)\*\*/g, "《$1》")
@@ -72,7 +72,7 @@ function clean(s = "") {
     .replace(/\s{2,}/g, " ")
     .trim();
 }
-// TTS用テキスト（読みやすく整形）
+// TTS用テキスト
 function speakable(s) {
   return s
     .replace(/①/g, "1つ目。").replace(/②/g, "2つ目。").replace(/③/g, "3つ目。")
@@ -80,11 +80,16 @@ function speakable(s) {
     .replace(/[“”"]/g, "")
     .trim();
 }
-// セリフセルから話者ごとの発話列を抽出
+// セリフセルから話者ごとの発話列（表示用/読み上げ用）を抽出
 function dialogue(cell = "") {
   const segs = [];
   for (const m of cell.matchAll(/(🐶|🐱)[^「🐶🐱]*「([^」]+)」/g)) {
-    segs.push({ who: m[1] === "🐱" ? "cat" : "dog", text: speakable(m[2]) });
+    const inner = m[2];
+    segs.push({
+      who: m[1] === "🐱" ? "cat" : "dog",
+      text: speakable(inner),
+      disp: inner.replace(/[《》]/g, "").replace(/[\u{1F000}-\u{1FAFF}\u{FE0F}]/gu, "").trim(),
+    });
   }
   return segs.filter((s) => s.text);
 }
@@ -93,7 +98,6 @@ const scenes = rows.map((c) => {
   const m = c[0].match(/(\d+)\s*-\s*(\d+)\s*s/);
   return {
     scriptDur: Math.max(1, Number(m[2]) - Number(m[1])),
-    serifu: clean(c[1]),
     telop: clean(c[2]),
     vis: clean(c[3] || ""),
     segs: dialogue(c[1]),
@@ -105,77 +109,75 @@ const workDir = join(outDir, ".render");
 rmSync(workDir, { recursive: true, force: true });
 mkdirSync(workDir, { recursive: true });
 
-// --- 1) 音声（TTS）: カットごとに合成し、実尺を確定 ---
-const silence = join(workDir, "sil.wav");
-ff(["-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", String(GAP), silence]);
-const lead = join(workDir, "lead.wav");
-ff(["-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", String(LEAD), lead]);
-
+// --- 1) シーン→ショット分解（1セリフ=1ショット、余り時間=待機ショット） ---
+// ショット: {bg, telop, vis, who|null, bubble|null, dur, audio|null, frames:[]}
+const shots = [];
 scenes.forEach((sc, i) => {
-  const parts = [];
+  const bg = PALETTE[i % PALETTE.length];
+  let used = 0;
   sc.segs.forEach((seg, j) => {
     const v = VOICE[seg.who];
     const aiff = join(workDir, `tts_${i}_${j}.aiff`);
     execFileSync("say", ["-v", v.voice, "-r", String(v.rate), "-o", aiff, seg.text]);
     const wav = join(workDir, `tts_${i}_${j}.wav`);
     ff(["-i", aiff, "-ar", "44100", "-ac", "1", wav]);
-    parts.push(wav);
+    const dur = Math.ceil((probeDur(wav) + LINE_PAD) * 10) / 10;
+    used += dur;
+    shots.push({ bg, telop: sc.telop, vis: sc.vis, who: seg.who, bubble: seg.disp, dur, audio: wav });
   });
-  const cutAudio = join(workDir, `audio_${i}.wav`);
-  if (parts.length) {
-    const list = join(workDir, `alist_${i}.txt`);
-    const entries = [lead, ...parts.flatMap((p, k) => (k ? [silence, p] : [p]))];
-    writeFileSync(list, entries.map((p) => `file '${basename(p)}'`).join("\n") + "\n");
-    ff(["-f", "concat", "-safe", "0", "-i", list, cutAudio]);
-    sc.audioDur = probeDur(cutAudio);
-  } else {
-    ff(["-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", String(sc.scriptDur), cutAudio]);
-    sc.audioDur = 0;
+  const rest = sc.scriptDur - used;
+  if (rest >= MIN_IDLE || sc.segs.length === 0) {
+    shots.push({ bg, telop: sc.telop, vis: sc.vis, who: null, bubble: null,
+                 dur: sc.segs.length ? rest : sc.scriptDur, audio: null });
   }
-  sc.dur = Math.max(sc.scriptDur, Math.ceil((sc.audioDur + TAIL_PAD) * 10) / 10);
-  sc.audio = cutAudio;
 });
 
-// --- 2) 口パク2コマのカードPNGを一括生成 ---
-const cardSpec = {
+// --- 2) フレームPNG一括生成（話者ショット=4コマ / 待機=2コマ） ---
+const spec = {
   W, H,
-  scenes: scenes.map((sc, i) => ({
-    bg: PALETTE[i % PALETTE.length],
-    telop: sc.telop || " ",
-    serifu: sc.serifu || " ",
-    vis: sc.vis || "",
-    outs: [join(workDir, `card_${i}_0.png`), join(workDir, `card_${i}_1.png`)],
-  })),
+  shots: shots.map((sh, k) => {
+    const n = sh.who ? 4 : 2;
+    sh.frames = Array.from({ length: n }, (_, p) => join(workDir, `f_${k}_${p}.png`));
+    return { bg: sh.bg, telop: sh.telop, vis: sh.vis, who: sh.who, bubble: sh.bubble, outs: sh.frames };
+  }),
 };
-const specFile = join(workDir, "scenes.json");
-writeFileSync(specFile, JSON.stringify(cardSpec));
+const specFile = join(workDir, "shots.json");
+writeFileSync(specFile, JSON.stringify(spec));
 execFileSync("python3", [join(__dirname, "_render_card.py"), specFile], { stdio: "inherit" });
 
-// --- 3) カットごとに 映像(2コマループ)+音声 のセグメントを作る ---
+// --- 3) ショットごとにセグメント動画（音声はapadで映像と同尺=ズレ防止） ---
 const segList = [];
-scenes.forEach((sc, i) => {
-  const seg = join(workDir, `seg_${i}.mp4`);
+shots.forEach((sh, k) => {
+  const seg = join(workDir, `seg_${k}.mp4`);
+  const audioIn = sh.audio
+    ? ["-i", sh.audio]
+    : ["-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono"];
   ff([
-    "-stream_loop", "-1", "-framerate", String(ANIM_FPS), "-i", join(workDir, `card_${i}_%d.png`),
-    "-i", sc.audio,
-    "-t", String(sc.dur),
+    "-stream_loop", "-1", "-framerate", String(ANIM_FPS), "-i", join(workDir, `f_${k}_%d.png`),
+    ...audioIn,
+    "-t", String(sh.dur),
+    "-af", "apad",
     "-r", String(FPS), "-pix_fmt", "yuv420p",
     "-c:v", "libx264", "-preset", "veryfast",
     "-c:a", "aac", "-b:a", "128k", "-ar", "44100", "-ac", "1",
+    "-shortest",
     seg,
   ]);
   segList.push(`file '${basename(seg)}'`);
-  process.stdout.write(`  ✓ カット${i + 1}/${scenes.length} ${sc.dur}s(音声${sc.audioDur.toFixed(1)}s) ${sc.telop.slice(0, 14)}\n`);
 });
 
-// --- 4) 連結 ---
+// --- 4) 連結 → ラウドネス正規化（-15LUFS, ショート標準） ---
 const listFile = join(workDir, "segs.txt");
 writeFileSync(listFile, segList.join("\n") + "\n");
+const tmpOut = join(workDir, "concat.mp4");
+ff(["-f", "concat", "-safe", "0", "-i", listFile, "-c", "copy", tmpOut]);
 const outPath = join(outDir, `${outName}.mp4`);
-ff(["-f", "concat", "-safe", "0", "-i", listFile, "-c", "copy", outPath]);
+ff(["-i", tmpOut, "-c:v", "copy",
+    "-af", "loudnorm=I=-15:TP=-1.5:LRA=11",
+    "-c:a", "aac", "-b:a", "128k", outPath]);
 rmSync(workDir, { recursive: true, force: true });
 
-const total = scenes.reduce((a, s) => a + s.dur, 0);
+const total = shots.reduce((a, s) => a + s.dur, 0);
 console.log(`✓ 書き出し完了: ${outPath}`);
-console.log(`  ${scenes.length}カット / 合計${total.toFixed(1)}s / ${W}x${H} @${FPS}fps / 口パク+TTS音声つき`);
+console.log(`  ${scenes.length}シーン/${shots.length}ショット / 合計${total.toFixed(1)}s / 吹き出し同期+4コマ口パク+ラウドネス正規化`);
 console.log(`  声: ネコ=${VOICE.cat.voice}@${VOICE.cat.rate} イヌ=${VOICE.dog.voice}@${VOICE.dog.rate}（NEKO_VOICE等で変更可）`);
