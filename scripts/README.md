@@ -1,8 +1,10 @@
 # scripts/ — 制作・配信自動化
 
-ネコネコ＆イヌイヌのコンテンツを **台本 → 動画 → 配信キュー → 予約投稿** まで回すスクリプト群。
+ネコネコ＆イヌイヌのコンテンツを **台本 → 動画（音声・口パクつき）→ 配信キュー → 予約投稿** まで回すスクリプト群。
 
-**依存:** Node.js 18+（`export.mjs`/`schedule.mjs` は標準のみ）／動画書き出しは `ffmpeg` + `python3`+`Pillow` + macOS 日本語フォント（`render.mjs`）。
+**依存:** Node.js 18+（`export.mjs`/`schedule.mjs` は標準のみ）／動画書き出しは `ffmpeg` + `python3`+`Pillow` + macOS（`say` 日本語TTS・日本語フォント）（`render.mjs`）。
+
+**音声と動き:** セリフ（🐱「…」🐶「…」）はmacOSの`say`で読み上げ（ネコ=Kyoko@165ゆっくり／イヌ=Kyoko@235早口。`NEKO_VOICE`/`INU_VOICE`/`NEKO_RATE`/`INU_RATE`で変更可）。話者は口パク＋ぴょこ揺れの2コマアニメ。カット尺は音声に合わせて自動延長される（台本の秒数は下限）。
 
 ## ファイル
 
