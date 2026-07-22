@@ -29,6 +29,8 @@
 | 02 | スクリプト | [`prompts/02-script.md`](prompts/02-script.md) | リテンション最適化スクリプト生成 |
 | 03 | フック | [`prompts/03-hook.md`](prompts/03-hook.md) | フックエンジニアリング（冒頭3秒の設計） |
 | 04 | 自動化 | [`prompts/04-automate.md`](prompts/04-automate.md) | 日次自動化ワークフロー |
+| 05 | ビジュアル | [`prompts/05-visual.md`](prompts/05-visual.md) | AI画像生成プロンプト（キャラ一貫性） |
+| 06 | アニメ化 | [`prompts/06-animate.md`](prompts/06-animate.md) | カット→I2V動画生成（リール級・[設計書](docs/ai-video-quality.md)） |
 
 ```
 IG分析 → ニッチ調査 → スクリプト生成 → フック設計 → 日次自動化
