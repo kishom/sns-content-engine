@@ -7,10 +7,12 @@
 ## 共通節（全カット先頭に連結）
 
 ```
-soft cute 2D mascot animation, gentle smooth motion, flat pastel colors,
-the characters keep EXACTLY the same design, colors and markings as the reference image,
-simple clean background, vertical 9:16, empty space at the top for caption text,
-no text, no watermark, static camera, ends in a loopable gentle idle motion
+adorable soft 3D character animation, gentle smooth squishy motion with subtle squash-and-stretch,
+matte clay-vinyl toy texture with a subtle velvety fuzz, soft studio lighting, pastel colors,
+the characters keep EXACTLY the same design, colors, markings and texture as the reference image,
+clean minimal 3D background with soft depth of field, vertical 9:16,
+empty space at the top for caption text, no text, no watermark,
+static camera, ends in a loopable gentle idle motion
 ```
 
 2キャラ同時カットの配置節:

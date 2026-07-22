@@ -21,11 +21,14 @@
 ### 共通スタイル節（毎カット付ける）
 
 ```
-soft cute 2D mascot animation, gentle smooth motion, flat pastel colors,
-the characters keep EXACTLY the same design, colors and markings as the reference image,
-simple clean background, vertical 9:16, empty space at the top for caption text,
-no text, no watermark, loopable gentle idle motion
+adorable soft 3D character animation, gentle smooth squishy motion with subtle squash-and-stretch,
+matte clay-vinyl toy texture with a subtle velvety fuzz, soft studio lighting, pastel colors,
+the characters keep EXACTLY the same design, colors, markings and texture as the reference image,
+clean minimal 3D background with soft depth of field, vertical 9:16,
+empty space at the top for caption text, no text, no watermark, loopable gentle idle motion
 ```
+
+> 3Dトイ質感はI2Vモデル（Veo/Kling）が最も得意とするドメイン＝2Dフラットより動きの破綻が少ない。動きは**やわらかい squash-and-stretch**（もちっと潰れて戻る）がこのキャラの生命線。
 
 ### 配置節（2キャラ同時のとき・毎回明記）
 
