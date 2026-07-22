@@ -51,12 +51,14 @@ characters do not swap positions or mirror
 | 猫が心配 | `Nekoneko tilts body, worried curved eyes, tail curls tighter` |
 | 2人で笑顔 | `both characters bounce softly in sync, happy closed-eye smiles, warm atmosphere` |
 
-### カメラ節（基本は固定・使っても1種）
+### カメラ節（常に固定）
 
 ```
-static camera            … 基本これ（マスコット寸劇はカメラを動かさない方が可愛い）
-slow gentle zoom in      … 強調カット（受診レベル等の要点）のみ
+static camera, ends in a loopable gentle idle motion
 ```
+
+**生成時のカメラワークは禁止**（ズーム入りクリップは音声長に合わせたループ延長ができなくなる）。
+強調ズームが欲しいカットは ffmpeg の `zoompan` で**後掛け**する。
 
 ---
 
@@ -85,5 +87,7 @@ slow gentle zoom in      … 強調カット（受診レベル等の要点）の
 - [ ] 参照画像は `assets/char-ref/` の確定版か（野良生成画像を使っていないか）
 - [ ] ネコ左・イヌ右、柄の指定を全カットに明記したか
 - [ ] 1カット=1アクションになっているか
+- [ ] 生成時カメラは静止か（ズームはffmpeg後掛けにしたか）
 - [ ] 上部テロップ余白が確保されているか／文字が焼き込まれていないか
+- [ ] 医療モチーフの背景で**赤い十字**が出ていないか（赤十字標章の使用制限。緑/パステルのみ可）
 - [ ] 合成後に `vet-marketing-compliance` チェック＋queue.json 承認ゲートを通したか
