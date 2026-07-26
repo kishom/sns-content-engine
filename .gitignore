@@ -21,3 +21,9 @@ node_modules/
 
 # プロフィールアイコンは成果物としてコミットする
 !assets/icon.png
+
+# キャラ基準画像は「確定デザインの正本」＝全生成の参照元なのでコミットする
+!assets/char-ref/*.png
+
+# char3d のデバッグ出力（柄の左右検証用・再生成可能）
+scripts/char3d/debug/
