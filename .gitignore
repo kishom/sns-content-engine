@@ -24,6 +24,11 @@ node_modules/
 
 # キャラ基準画像は「確定デザインの正本」＝全生成の参照元なのでコミットする
 !assets/char-ref/*.png
+!assets/char-ref/expressions/*.png
+
+# char3d でレンダリングしたカット構図（I2V生成の入力画像）はコミットする
+# ※ render.mjs が出力する動画用の中間PNGとは別物（あちらは .render/ 配下）
+!content/**/cut-*.png
 
 # char3d のデバッグ出力（柄の左右検証用・再生成可能）
 scripts/char3d/debug/
