@@ -5,6 +5,11 @@
 //
 // ★造形・色・柄・質感は Kisho GO 済みの確定版。表情/ポーズ/小道具の追加で
 //   これらを変更してはいけない（顔の描画だけを表情で差し替える）。
+//
+// このファイルは静止画レンダラ（render.mjs → scene.html）と
+// アニメーションレンダラ（animate.mjs → anim.html → anim.js）の共通土台。
+// anim.js からは各ビルダを import して使う。`?anim=1` が付いたときだけ
+// 末尾の静止画セットアップをスキップする（静止画の挙動は不変）。
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
@@ -13,7 +18,7 @@ window.__err = null;
 window.addEventListener('error', (e) => { window.__err = String(e.message || e.error); });
 
 // ---------- palette (05-visual.md の HEX を正とする) ----------
-const COL = {
+export const COL = {
   catBase: '#EFE9DF',
   catPatch: '#BFB4A4',
   dogBase: '#E4C9A0',
@@ -62,7 +67,7 @@ function mulberry32(seed) {
 //
 // expr: neko = neutral | nonbiri | doya | shinpai | yareyare | niko
 //       inu  = neutral | egao | zenryoku | shombori | hatto | niko
-function makeBodyTexture(kind, expr = 'neutral') {
+export function makeBodyTexture(kind, expr = 'neutral') {
   const W = 4096, H = 2048;
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
@@ -388,7 +393,7 @@ function roundedBoxGeometry(w, h, d, r, seg = 6) {
   return geo;
 }
 
-function softMat(color, opts = {}) {
+export function softMat(color, opts = {}) {
   // マット（クレイ/ソフビ）+ sheen（微起毛のベルベット感）。光沢NG。
   return new THREE.MeshPhysicalMaterial({
     color,
@@ -402,7 +407,7 @@ function softMat(color, opts = {}) {
 }
 
 // ---------- props（すべてシンプルなプリミティブ・マット質感でキャラに馴染ませる） ----------
-function makeWaterBowl() {
+export function makeWaterBowl() {
   const grp = new THREE.Group();
   // 陶器のボウル（Lathe の断面: 外側を上がって縁を越え内側を戻る）
   const prof = [
@@ -432,7 +437,7 @@ function makeWaterBowl() {
   return grp;
 }
 
-function makeLitterBox() {
+export function makeLitterBox() {
   const grp = new THREE.Group();
   const tray = new THREE.Mesh(roundedBoxGeometry(1.12, 0.34, 0.86, 0.11, 8), softMat(COL.litterTray));
   tray.position.y = 0.17;
@@ -444,7 +449,7 @@ function makeLitterBox() {
   return grp;
 }
 
-function makeWeighScale() {
+export function makeWeighScale() {
   const grp = new THREE.Group();
   const body = new THREE.Mesh(roundedBoxGeometry(0.98, 0.20, 0.98, 0.08, 8), softMat(COL.scaleBody));
   body.position.y = 0.10;
@@ -465,7 +470,7 @@ function makeWeighScale() {
 }
 
 // ★ 十字アイコンは必ず緑/パステル（赤十字標章の使用制限に触れるため赤は絶対に使わない）
-function makeCross() {
+export function makeCross() {
   const grp = new THREE.Group();
   const mat = softMat(COL.crossGreen);
   const barH = new THREE.Mesh(roundedBoxGeometry(0.92, 0.30, 0.22, 0.10, 6), mat);
@@ -478,7 +483,7 @@ function makeCross() {
 // 実測の教訓: ①板が白いと中身と同化して真っ白なカードに見える → パステルで色差をつける
 //             ②カメラより高い位置に置くと器/トイレ/体重計を「下から」見ることになり中身が読めない
 //               → 小道具だけ手前に倒して（rotation.x）中身をカメラへ向ける
-function makeIconPlate(kind) {
+export function makeIconPlate(kind) {
   const tint = { water: '#D5EAF6', litter: '#EDE3D2', scale: '#F3DFE6' }[kind] || '#FFFFFF';
   const grp = new THREE.Group();
   const plate = new THREE.Mesh(roundedBoxGeometry(1.32, 1.32, 0.20, 0.38, 8), softMat(tint));
@@ -521,7 +526,7 @@ function sparkleTexture() {
   _sparkleTex.colorSpace = THREE.SRGBColorSpace;
   return _sparkleTex;
 }
-function makeSparkle(size = 1) {
+export function makeSparkle(size = 1) {
   return new THREE.Mesh(
     new THREE.PlaneGeometry(0.78 * size, 0.78 * size),
     new THREE.MeshBasicMaterial({ map: sparkleTexture(), transparent: true, depthWrite: false })
@@ -531,7 +536,7 @@ function makeSparkle(size = 1) {
 // ---------- character builders ----------
 // opts: { expr, pawRaise: 'left'|'right'|null, pawTap: bool, earDroop, earUp,
 //         bounce: 0..1（正で浮き上がり＋縦ストレッチ）, tilt（rad・体の傾き）, nod（rad・前傾/うなずき） }
-function buildChar(kind, opts = {}) {
+export function buildChar(kind, opts = {}) {
   const {
     expr = 'neutral', pawRaise = null, pawTap = false,
     earDroop = false, earUp = false, bounce = 0, tilt = 0, nod = 0,
@@ -540,9 +545,31 @@ function buildChar(kind, opts = {}) {
   const grp = new THREE.Group();
   const baseHex = kind === 'neko' ? COL.catBase : COL.dogBase;
 
+  // アニメーション用のパーツ参照（静止画の見た目には一切影響しない・anim.js が使う）
+  const parts = { body: null, paws: [], raisedPaw: null, feet: [], ears: [], tailPivot: null, tail: null };
+  grp.userData.kind = kind;
+  grp.userData.opts = opts;
+  grp.userData.parts = parts;
+
+  // 回転の支点をパーツの付け根へ移すためのラッパ。
+  // ★ pivot は回転・スケール恒等 & 子の相対位置で相殺するので、
+  //   静止状態のワールド変換は完全に元と同一（＝既存の静止画は1pxも変わらない）。
+  //   localTip = メッシュのローカル座標での「付け根方向」の単位ベクトル。
+  const pivotAt = (mesh, localTip) => {
+    const off = localTip.clone()
+      .multiply(mesh.scale)          // ジオメトリのスケールを反映
+      .applyEuler(mesh.rotation);    // メッシュ自身の回転を反映
+    const pivot = new THREE.Group();
+    pivot.position.copy(mesh.position).add(off);
+    mesh.position.set(-off.x, -off.y, -off.z);
+    pivot.add(mesh);
+    return pivot;
+  };
+
   const body = new THREE.Mesh(beanGeometry(), softMat('#FFFFFF', { map: makeBodyTexture(kind, expr) }));
   body.castShadow = true; body.receiveShadow = true;
   grp.add(body);
+  parts.body = body;
 
   const limbMat = softMat(baseHex);
 
@@ -562,6 +589,8 @@ function buildChar(kind, opts = {}) {
     }
     paw.castShadow = true;
     grp.add(paw);
+    parts.paws.push(paw);
+    if (sx === raiseSide) parts.raisedPaw = paw;
   }
   // 足: 底の前寄りにちょこん（体に密着）
   for (const sx of [-1, 1]) {
@@ -570,6 +599,7 @@ function buildChar(kind, opts = {}) {
     foot.position.set(sx * 0.34, -1.08, 0.34);
     foot.castShadow = true;
     grp.add(foot);
+    parts.feet.push(foot);
   }
 
   if (kind === 'neko') {
@@ -578,16 +608,22 @@ function buildChar(kind, opts = {}) {
     const innerGeo = catEarGeometry();
     for (const sx of [-1, 1]) {
       const isLeftEar = sx > 0; // char's LEFT = +x
+      // 耳ピクは付け根（耳の底）を支点に回したいので pivot でくるむ。
+      // ネコ耳の Lathe は原点が底なので pivot 位置 = 元の ear.position でよい。
+      const pivot = new THREE.Group();
+      pivot.position.set(sx * 0.44, 0.86, -0.02);
+      grp.add(pivot);
       const ear = new THREE.Mesh(earGeo, softMat(isLeftEar ? COL.catPatch : COL.catBase));
-      ear.position.set(sx * 0.44, 0.86, -0.02);
+      ear.position.set(0, 0, 0);
       ear.rotation.z = -sx * 0.42; // 外側へ傾け
       ear.castShadow = true;
-      grp.add(ear);
+      pivot.add(ear);
       const inner = new THREE.Mesh(innerGeo, softMat(COL.innerEar));
       inner.scale.set(0.5, 0.55, 0.35);
-      inner.position.set(sx * 0.455, 0.89, 0.12);
+      inner.position.set(sx * 0.455 - sx * 0.44, 0.89 - 0.86, 0.12 - (-0.02));
       inner.rotation.z = -sx * 0.42;
-      grp.add(inner);
+      pivot.add(inner);
+      parts.ears.push(pivot);
     }
     // ★ しっぽ: キャラ自身の右側(-x)にカール
     const pts = [
@@ -605,6 +641,7 @@ function buildChar(kind, opts = {}) {
     const tip = new THREE.Mesh(new THREE.SphereGeometry(0.125, 32, 24), softMat(COL.catPatch));
     tip.position.copy(pts[pts.length - 1]);
     grp.add(tip);
+    parts.tail = tail;   // ネコのしっぽはカーブ形状なので振らない（参照のみ）
   } else {
     // ★ こげ茶の垂れ耳（両側）: 平たい楕円をサイドに垂らす
     const earMat = softMat(COL.dogEar);
@@ -618,7 +655,10 @@ function buildChar(kind, opts = {}) {
       ear.rotation.z = sx * (0.78 + droop);
       ear.rotation.y = sx * 0.10;
       ear.castShadow = true;
-      grp.add(ear);
+      // 耳の「ぱたっ」は頭への付け根（耳の上端）を支点に振る
+      const pivot = pivotAt(ear, new THREE.Vector3(0, 1, 0));
+      grp.add(pivot);
+      parts.ears.push(pivot);
     }
     // ★ しっぽ: キャラ自身の左側(+x)後方に小さく
     const tail = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 24), limbMat);
@@ -627,7 +667,11 @@ function buildChar(kind, opts = {}) {
     tail.rotation.z = -0.85 + (bounce > 0 ? 0.28 : 0);
     tail.rotation.x = -0.35;
     tail.castShadow = true;
-    grp.add(tail);
+    // しっぽ振りは付け根（お尻側の端）を支点に振る
+    const tailPivot = pivotAt(tail, new THREE.Vector3(0, -1, 0));
+    grp.add(tailPivot);
+    parts.tailPivot = tailPivot;
+    parts.tail = tail;
   }
 
   grp.position.y = 1.22; // 接地
@@ -642,7 +686,7 @@ function buildChar(kind, opts = {}) {
 }
 
 // ---------- scene ----------
-const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+export const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(window.devicePixelRatio || 1);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
@@ -652,7 +696,7 @@ renderer.toneMappingExposure = 1.0;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.body.appendChild(renderer.domElement);
 
-const scene = new THREE.Scene();
+export const scene = new THREE.Scene();
 
 // パステル背景（上ピンク→下クリームのグラデ）
 {
@@ -712,23 +756,23 @@ scene.add(new THREE.HemisphereLight('#FFF6EC', '#E5D3BE', 0.42));
 const params = new URLSearchParams(location.search);
 const shot = params.get('shot') || 'hero_duo';
 
-const camera = new THREE.PerspectiveCamera(33, window.innerWidth / window.innerHeight, 0.1, 100);
+export const camera = new THREE.PerspectiveCamera(33, window.innerWidth / window.innerHeight, 0.1, 100);
 
 // 2キャラ 9:16 の標準カメラ（上部にテロップ余白・キャラは下寄り）
 // ※ z=13.2/camera.x=0.3 だとネコのしっぽ側（画面左）が切れる（実測）→ 引いて中央寄せ
-function duoCam(z = 14.0, lookY = 2.62) {
+export function duoCam(z = 14.0, lookY = 2.62) {
   camera.position.set(0.05, 2.3, z);
   camera.lookAt(0.05, lookY, 0);
 }
 // 単体 9:16 の標準カメラ
-function soloCam(z = 10.0, lookY = 2.15) {
+export function soloCam(z = 10.0, lookY = 2.15) {
   camera.position.set(0.05, 2.0, z);
   camera.lookAt(0, lookY, 0);
 }
 
 // 2キャラ配置（★ネコ左・イヌ右を厳守。この関数以外で配置しない）
 // offsetX: ネコのしっぽが画面左にはみ出すぶん、ペア全体をわずかに右へ寄せる
-function placeDuo(nekoOpts, inuOpts, { spread = 1.16, faceIn = true, offsetX = 0.12 } = {}) {
+export function placeDuo(nekoOpts, inuOpts, { spread = 1.16, faceIn = true, offsetX = 0.12 } = {}) {
   const neko = buildChar('neko', nekoOpts);
   const inu = buildChar('inu', inuOpts);
   neko.position.x = -spread + offsetX;
@@ -743,13 +787,16 @@ function placeDuo(nekoOpts, inuOpts, { spread = 1.16, faceIn = true, offsetX = 0
   return { neko, inu };
 }
 
-function addSparkles(list) {
+export function addSparkles(list) {
+  const out = [];   // anim.js が明滅させるための参照（静止画側は戻り値を使わない）
   for (const [x, y, z, s] of list) {
     const sp = makeSparkle(s);
     sp.position.set(x, y, z);
     sp.rotation.z = (x + y) * 0.7;
     scene.add(sp);
+    out.push(sp);
   }
+  return out;
 }
 
 const CUTS = {
@@ -905,13 +952,20 @@ function setupShot(name) {
     window.__err = 'unknown shot: ' + name;
   }
 }
-setupShot(shot);
+// ★ `?anim=1`（anim.html 経由）のときは静止画セットアップを行わない。
+//   シーン/カメラ/ライト/レンダラだけを土台として anim.js に渡す。
+//   静止画レンダラ（render.mjs）は anim を付けないので挙動は完全に不変。
+export const ANIM_MODE = params.get('anim') === '1';
 
-// 数フレーム回してから完了フラグ（シェーダコンパイル/シャドウ安定用）
-// ※ヘッドレスでは rAF が発火しないことがあるため同期レンダリング
-try {
-  for (let i = 0; i < 6; i++) renderer.render(scene, camera);
-  window.__done = true;
-} catch (e) {
-  window.__err = String(e && e.message || e);
+if (!ANIM_MODE) {
+  setupShot(shot);
+
+  // 数フレーム回してから完了フラグ（シェーダコンパイル/シャドウ安定用）
+  // ※ヘッドレスでは rAF が発火しないことがあるため同期レンダリング
+  try {
+    for (let i = 0; i < 6; i++) renderer.render(scene, camera);
+    window.__done = true;
+  } catch (e) {
+    window.__err = String(e && e.message || e);
+  }
 }

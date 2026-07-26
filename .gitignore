@@ -32,3 +32,6 @@ node_modules/
 
 # char3d のデバッグ出力（柄の左右検証用・再生成可能）
 scripts/char3d/debug/
+
+# compose.mjs の中間ファイル（KEEP_WORK=1 のとき残る・再生成可能）
+scripts/compose/.compose/

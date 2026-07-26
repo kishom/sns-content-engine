@@ -11,5 +11,9 @@
   "license": "ISC",
   "dependencies": {
     "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@ffprobe-installer/ffprobe": "^2.1.2"
   }
 }
