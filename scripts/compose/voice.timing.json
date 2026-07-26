@@ -1,0 +1,146 @@
+{
+  "cuts": [
+    {
+      "id": "cut-01",
+      "dur": 4.033,
+      "origDur": 3,
+      "subs": [
+        {
+          "start": 0.18,
+          "end": 2.015
+        },
+        {
+          "start": 2.095,
+          "end": null
+        }
+      ],
+      "checkChips": []
+    },
+    {
+      "id": "cut-02",
+      "dur": 4,
+      "origDur": 4,
+      "subs": [
+        {
+          "start": 0.18,
+          "end": null
+        }
+      ],
+      "checkChips": []
+    },
+    {
+      "id": "cut-03",
+      "dur": 8.4,
+      "origDur": 5,
+      "subs": [
+        {
+          "start": 0.18,
+          "end": 1.335
+        },
+        {
+          "start": 1.415,
+          "end": 6.31
+        },
+        {
+          "start": 6.39,
+          "end": null
+        }
+      ],
+      "checkChips": []
+    },
+    {
+      "id": "cut-04",
+      "dur": 10.167,
+      "origDur": 7,
+      "subs": [
+        {
+          "start": 0.18,
+          "end": 5.528
+        },
+        {
+          "start": 5.608,
+          "end": null
+        }
+      ],
+      "checkChips": []
+    },
+    {
+      "id": "cut-05",
+      "dur": 11.433,
+      "origDur": 8,
+      "subs": [
+        {
+          "start": 0.18,
+          "end": 1.802
+        },
+        {
+          "start": 1.882,
+          "end": 7.919
+        },
+        {
+          "start": 7.999,
+          "end": null
+        }
+      ],
+      "checkChips": [
+        {
+          "start": 1.882,
+          "end": null
+        },
+        {
+          "start": 3.92,
+          "end": null
+        },
+        {
+          "start": 6.265,
+          "end": null
+        }
+      ]
+    },
+    {
+      "id": "cut-06",
+      "dur": 9.067,
+      "origDur": 6,
+      "subs": [
+        {
+          "start": 0.18,
+          "end": 6.521
+        },
+        {
+          "start": 6.601,
+          "end": null
+        }
+      ],
+      "checkChips": []
+    },
+    {
+      "id": "cut-07",
+      "dur": 7,
+      "origDur": 7,
+      "subs": [
+        {
+          "start": 0.18,
+          "end": 2.147
+        },
+        {
+          "start": 2.227,
+          "end": null
+        }
+      ],
+      "checkChips": []
+    }
+  ],
+  "meta": {
+    "fps": 30,
+    "lead": 0.18,
+    "gap": 0.38,
+    "partGap": 0.2,
+    "tail": 0.35,
+    "hold": 0.3,
+    "total": 54.1,
+    "voiceWav": "voice.wav",
+    "targetLufs": -14,
+    "generatedAt": "2026-07-26T21:21:26.121Z",
+    "tts": "pyopenjtalk 0.4.1 (Open JTalk / HTS mei_normal)"
+  }
+}

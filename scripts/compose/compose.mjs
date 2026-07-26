@@ -2,7 +2,8 @@
 // compose.mjs — cut-01〜07 の素材クリップにテロップ／字幕を焼き込み、1本のリールに連結する。
 //
 // 使い方:
-//   node scripts/compose/compose.mjs                 # 全カット合成 → cat-ckd_reel.mp4
+//   node scripts/compose/compose.mjs                 # 全カット合成 → cat-ckd_reel.mp4（無音）
+//   node scripts/compose/compose.mjs --voice         # 音声版 → cat-ckd_reel_voiced.mp4
 //   node scripts/compose/compose.mjs --overlays-only # テロップPNGだけ書き出して確認
 //   KEEP_WORK=1 node scripts/compose/compose.mjs     # 中間ファイル(.compose/)を残す
 //
@@ -10,10 +11,11 @@
 //   1) テロップ／字幕を Chromium(Playwright) で **透過PNG** としてレンダリング（Noto Sans JP を @font-face で読む）
 //   2) カットごとに ffmpeg で PNG をオーバーレイ合成（各レイヤーは alpha フェードで出入り）
 //      素材が台本より短いカットは -stream_loop でループ延長、長いカットは -t でトリム
-//   3) 全カットを concat → 無音トラック（AAC）を付けて faststart で書き出し
+//   3) 全カットを concat → 音声トラックを付けて faststart で書き出し
 //
-// ⚠️ 音声は入っていない。この環境から TTS(VOICEVOX等) に到達できないため、
-//    セリフ音声は後日 Mac 側で足す前提の「テロップ付き無音マスター」。README 参照。
+// --voice を付けると tts.mjs が書いた voice.timing.json を読み、**カット尺と字幕の時刻を
+// 音声の実測に合わせて上書き**したうえで content/<PROJECT>/voice.wav を多重化する。
+// 付けない場合は従来どおり台本の時間割で焼き、無音AACを付けた無音マスターになる。
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -37,7 +39,30 @@ const FONT_DIR = path.join(here, 'node_modules/@fontsource/noto-sans-jp/files');
 const W = 1080, H = 1920, FPS = 30;
 const FADE = 0.22;              // レイヤーの出入りフェード（秒）
 const OVERLAYS_ONLY = process.argv.includes('--overlays-only');
+const VOICE = process.argv.includes('--voice');
 const KEEP_WORK = process.env.KEEP_WORK === '1' || OVERLAYS_ONLY;
+
+// ── 音声版のタイムライン差し替え ──
+// tts.mjs が実測音声長から引き直した尺・字幕時刻を、台本の時間割の上に被せる。
+// （素材クリップはループ可能なので、尺が伸びた分は下の -stream_loop がそのまま埋める）
+const TIMING_FILE = path.join(here, 'voice.timing.json');
+const VOICE_WAV = path.join(SRC_DIR, 'voice.wav');
+let timing = null;
+if (VOICE) {
+  if (!fs.existsSync(TIMING_FILE)) throw new Error(`voice.timing.json が無い。先に node scripts/compose/tts.mjs を実行する`);
+  if (!fs.existsSync(VOICE_WAV)) throw new Error(`voice.wav が無い。先に node scripts/compose/tts.mjs を実行する`);
+  timing = JSON.parse(fs.readFileSync(TIMING_FILE, 'utf8'));
+}
+
+/** 音声版なら timing で cut を上書きした複製を返す（無音版はそのまま） */
+function applyTiming(cut) {
+  if (!timing) return cut;
+  const t = timing.cuts.find((c) => c.id === cut.id);
+  if (!t) throw new Error(`voice.timing.json に ${cut.id} が無い（tts.mjs を再実行する）`);
+  const subs = (cut.subs || []).map((s, i) => ({ ...s, start: t.subs[i].start, end: t.subs[i].end ?? undefined }));
+  const checkChips = (cut.checkChips || []).map((c, i) => ({ ...c, start: t.checkChips[i].start, end: t.checkChips[i].end ?? undefined }));
+  return { ...cut, dur: t.dur, subs, checkChips };
+}
 
 const sh = (cmd, args) =>
   new Promise((res, rej) => {
@@ -184,7 +209,8 @@ const page = await browser.newPage({ viewport: { width: W, height: H }, deviceSc
 page.on('pageerror', (e) => console.error('[page]', e.message));
 
 const plan = [];
-for (const cut of CUTS) {
+for (const cut0 of CUTS) {
+  const cut = applyTiming(cut0);
   const layers = layersFor(cut);
   for (const l of layers) {
     const file = path.join(WORK, `${cut.id}_${l.name}.png`);
@@ -276,19 +302,29 @@ fs.writeFileSync(listFile, segs.map((s) => `file '${s.replace(/'/g, "'\\''")}'`)
 const concatOut = path.join(WORK, 'concat.mp4');
 await sh(FFMPEG, ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', listFile, '-c', 'copy', concatOut]);
 
-const final = path.join(SRC_DIR, `${OUT_NAME}.mp4`);
-await sh(FFMPEG, [
-  '-y', '-loglevel', 'error',
-  '-i', concatOut,
-  '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=48000',
-  '-c:v', 'copy', '-c:a', 'aac', '-b:a', '96k', '-shortest',
-  '-movflags', '+faststart',
-  final,
-]);
+const final = path.join(SRC_DIR, `${OUT_NAME}${VOICE ? '_voiced' : ''}.mp4`);
+await sh(FFMPEG, VOICE
+  ? [
+    // 音声版: tts.mjs が -14 LUFS に整えたトラックをそのまま載せる（ここで再正規化しない）
+    '-y', '-loglevel', 'error',
+    '-i', concatOut, '-i', VOICE_WAV,
+    '-map', '0:v:0', '-map', '1:a:0',
+    '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-ar', '48000', '-ac', '2',
+    '-movflags', '+faststart',
+    final,
+  ]
+  : [
+    '-y', '-loglevel', 'error',
+    '-i', concatOut,
+    '-f', 'lavfi', '-i', 'anullsrc=channel_layout=stereo:sample_rate=48000',
+    '-c:v', 'copy', '-c:a', 'aac', '-b:a', '96k', '-shortest',
+    '-movflags', '+faststart',
+    final,
+  ]);
 
 if (!KEEP_WORK) fs.rmSync(WORK, { recursive: true, force: true });
 
 const dur = await probe(final);
 const mb = (fs.statSync(final).size / 1048576).toFixed(2);
 console.log(`\n✓ 完成: ${final}`);
-console.log(`  ${dur.toFixed(2)}s / ${W}x${H} / ${FPS}fps / ${mb}MB / 無音（音声は後工程でMacで付与）`);
+console.log(`  ${dur.toFixed(2)}s / ${W}x${H} / ${FPS}fps / ${mb}MB / ${VOICE ? `音声あり（${timing.meta.tts} / ${timing.meta.targetLufs} LUFS）` : '無音（音声は tts.mjs → --voice で付与）'}`);

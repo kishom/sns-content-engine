@@ -5,43 +5,144 @@
 
 ```
 02-script.md（正本）
-  └─ script.config.mjs  ← テロップ／字幕／尺 の定義（ここだけ触れば文言を直せる）
-       └─ compose.mjs   ← 透過PNG生成（Chromium）→ ffmpeg合成 → 連結
-            └─ content/2026-07-22_cat-ckd/cat-ckd_reel.mp4
+  └─ script.config.mjs  ← テロップ／字幕／尺／読み仮名／声 の定義（ここだけ触れば直せる）
+       ├─ tts.mjs + tts.py   ← 音声合成（pyopenjtalk）→ voice.wav ＋ voice.timing.json
+       └─ compose.mjs        ← 透過PNG生成（Chromium）→ ffmpeg合成 → 連結 → 音声多重化
+            ├─ content/2026-07-22_cat-ckd/cat-ckd_reel.mp4         （無音マスター）
+            └─ content/2026-07-22_cat-ckd/cat-ckd_reel_voiced.mp4  （音声入り＝投稿用）
 ```
 
 ## 使い方
 
 ```sh
 cd /path/to/sns-content-engine
-node scripts/compose/compose.mjs                 # 合成 → cat-ckd_reel.mp4（約2分）
+
+# ── 音声入りを作る（通常はこの2本） ──
+node scripts/compose/tts.mjs                     # 音声合成＋タイムライン再計算（約10秒）
+node scripts/compose/compose.mjs --voice         # 焼き込み＋音声多重化 → _voiced.mp4（約3分）
+node scripts/compose/verify_voice.mjs            # 検証（尺・LUFS・字幕同期・話者の作り分け）
+
+# ── その他 ──
+node scripts/compose/tts.mjs --dry               # 合成せず「読み（カナ）」だけ確認＝誤読チェック
+node scripts/compose/compose.mjs                 # 無音マスターを作り直す（従来どおり）
 node scripts/compose/compose.mjs --overlays-only  # テロップPNGだけ書き出して見た目を確認
-KEEP_WORK=1 node scripts/compose/compose.mjs      # 中間ファイル(.compose/)を残す
+KEEP_WORK=1 node scripts/compose/tts.mjs          # 中間ファイル(.voice/)を残す
 ```
 
 初回のみ `cd scripts/compose && npm install`（ffmpeg / ffprobe / Noto Sans JP を取得）。
+音声には `pip install pyopenjtalk` が必要（初回実行時に辞書を自動DL）。
 
-## ⚠️ 完成品は「無音」
+**必ず `tts.mjs` → `compose.mjs --voice` の順で実行すること。** tts.mjs が書く
+`voice.timing.json`（カット尺・字幕時刻）を compose.mjs が読むため、台本を変えたら音声から作り直す。
 
-**`cat-ckd_reel.mp4` に音声は入っていない**（無音のAACトラックのみ付与）。
-この実行環境からは VOICEVOX 等の TTS に到達できないため、**テロップ付きの無音マスター**として書き出している。
-「音声入り」ではないので、そのまま投稿しないこと。
+## 音声（日本語TTS）
 
-### 後工程（Mac で音声を足す）
+`cat-ckd_reel_voiced.mp4` に**日本語音声が入っている**。`cat-ckd_reel.mp4` は無音マスターとして残してある。
 
-1. 各セリフを VOICEVOX で書き出す。話者と文言は `script.config.mjs` の `subs[]` が正本
-   （`who: 'cat'` = ネコネコ / `'dog'` = イヌイヌ、`start` = そのカット内での開始秒）。
-2. 字幕の表示タイミングは実測の音声長に合わせて `script.config.mjs` の `start` / `end` を調整し、
-   `node scripts/compose/compose.mjs` を再実行してテロップを焼き直す。
-   （台本の「⏱️ 猫の返し（反転）が2.5秒以内」の指示どおり、フックの尺は音声実測で詰める）
-3. 音声を並べたトラックを作り、映像に多重化する:
-   ```sh
-   ffmpeg -i cat-ckd_reel.mp4 -i voice.wav \
-     -c:v copy -map 0:v:0 -map 1:a:0 \
-     -af loudnorm=I=-15:TP=-1.5:LRA=11 -c:a aac -b:a 128k \
-     -movflags +faststart cat-ckd_reel_voiced.mp4
+| | 無音版 | 音声版 |
+|---|---|---|
+| ファイル | `cat-ckd_reel.mp4` | `cat-ckd_reel_voiced.mp4` |
+| 尺 | 40.00s（台本の時間割） | 54.10s（音声の実測に合わせて延長） |
+| 音声 | 無音AAC | AAC 48kHz ステレオ / **-14 LUFS** |
+
+### 声の作り分け
+
+pyopenjtalk の声は**1種類しかない**ので、`script.config.mjs` の `SPEAKERS[].voice` で
+ピッチ・話速・フォルマントを変えて2キャラを作っている。
+
+| | speed | halfTone | formant | maxPause | 実測F0 |
+|---|---|---|---|---|---|
+| ネコネコ（落ち着き） | 0.94 | -2.0 | 0.970 | 0.30s | 309 Hz |
+| イヌイヌ（元気） | 1.12 | +2.5 | 1.045 | 0.20s | 396 Hz |
+
+実測のピッチ差 **4.3 半音**（`verify_voice.mjs` の 5) で毎回チェックされる）。
+`formant` は `asetrate` で標本化レートごと動かして `atempo` で尺を戻す＝声道の太さが変わる。
+`maxPause` は Open JTalk が読点「、」に入れる 0.5〜0.65 秒の間を詰める上限（間延び対策）。
+
+### 尺は音声に合わせて自動で伸びる
+
+台本の時間割（`dur` / `start` / `end`）は**無音版の値**。音声版では `tts.mjs` が
+実測の音声長からタイムラインを引き直し、`voice.timing.json` に書く。
+
+- セリフ間 0.38 秒 / カット頭 0.18 秒 / カット尻 0.35 秒の「間」を自動で入れる
+- 音声が入りきらないカットは**尺を伸ばす**（縮めはしない）。素材クリップはループ可能なので
+  compose.mjs が `-stream_loop` でそのまま埋める
+- cut-05 のチェックチップは「①水を飲む量／②おしっこの量・色／③体重」を**3セグメントに分けて合成**し、
+  各セグメントの実測開始にチップを吸着させている（`parts:` と `anchorPart:`）。
+  だから「水」と言った瞬間に「水」のチップが出る
+
+∴ **`script.config.mjs` の start / end を音声に合わせて手で直す必要はない。**
+
+### 読み仮名の直し方（重要）
+
+pyopenjtalk は漢字仮名交じり文を**誤読する**。実際にこのリールで見つかった誤読:
+
+| 表記 | 誤った読み | 対処 |
+|---|---|---|
+| 年1〜2回 | トシイチ〜ニカイ（「〜」が読まれない／年がトシ） | `read:` で「1年に1回から2回」→ イチネンニイッカイカラニカイ |
+
+手順:
+
+1. `node scripts/compose/tts.mjs --dry` を実行し、`content/<PROJECT>/voice.readings.txt` の
+   **kana 行を全部目視する**（合成せず読みだけ出るので速い）
+2. 誤読があれば `script.config.mjs` の該当 sub に `read:` を足す
+   ```js
+   { who: 'cat', text: '7歳を過ぎたら、年1〜2回の<br>健康診断（血液・尿検査）で',
+     read: '7歳を過ぎたら、1年に1回から2回の健康診断、血液や尿の検査で', start: 0.15, end: 3.2 },
    ```
-   （`-15 LUFS` は `scripts/render.mjs` と同じショート標準）
+3. `--dry` で読みが直ったことを確認してから本番合成
+
+**`read:` は漢字を残したまま直すこと。** 全部ひらがなにするとアクセント推定が崩れて
+かえって不自然になる（Open JTalk は表記からアクセント句を決めている）。
+直すのは「誤読する語」と「間が欲しい位置の読点」だけでよい。
+
+`text`（画面表示）と `read`（読み上げ）が違ってよいのは、**書き言葉を話し言葉にする範囲まで**。
+意味を変えてはいけない（表示「年1〜2回」＝音声「1年に1回から2回」は同義なのでOK）。
+
+### 検証
+
+```sh
+node scripts/compose/verify_voice.mjs
+```
+
+1. 音声ストリームの有無・尺の一致 2) ラウドネス（-14±1 LUFS / TP≦-1.0dBTP）
+3. **字幕と音声の同期** — `silencedetect` で拾った発話開始と `voice.timing.json` の字幕開始を突き合わせ（実測 最大ズレ 0.03s）
+4. 各セリフ区間に実際に音があるか 5) 2キャラのF0差（≧2半音）
+
+> ⚠️ **ピッチの検証に素朴な自己相関のピーク取りを使わないこと。** 倍音を掴んでオクターブを誤り、
+> 「2キャラの差が 0.4 半音しかない」という誤った結論が出た。`tts.py` の `yin_f0()`（YIN法）を使う。
+
+### BGM
+
+**現状BGMは無し（声だけ）。** 足すときは `tts.mjs` の loudnorm 段の直前に mix を挟む
+（`voice.wav` を作る箇所にコメントで位置を書いてある）。声を -14 LUFS に置いたまま
+BGMを -30 LUFS 前後で重ね、**最後に全体をまとめて -14 LUFS に正規化し直す**こと。
+
+### ライセンス・クレジット表記（**必須**）
+
+音声は **Open JTalk / HTS Voice "Mei"**（pyopenjtalk 0.4.1 同梱）で合成している。
+
+| 構成要素 | ライセンス | クレジット |
+|---|---|---|
+| pyopenjtalk | MIT | 不要（著作権表示の保持のみ） |
+| Open JTalk / HTS Engine API | 修正BSD | 不要（著作権表示の保持のみ） |
+| 辞書（NAIST / UniDic） | 修正BSD | 不要（著作権表示の保持のみ） |
+| **HTS Voice "Mei"** | **CC BY 3.0** | **必要** |
+
+**HTS Voice "Mei" は CC BY 3.0 ＝ 表示（Attribution）が義務。** 商用利用・改変は可能だが、
+**この音声を使った投稿にはクレジットを入れること。** キャプション末尾に入れる文言:
+
+```
+音声合成: Open JTalk / HTS Voice "Mei" (C) 2009-2013 Nagoya Institute of Technology,
+MMDAgent Project Team — CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/)
+```
+
+（コピペ用は `content/<PROJECT>/voice.credits.md` にも置いてある）
+
+VOICEVOX は使っていない。`pip install voicevox_core` は **PyPI に存在せず**（GitHub Releases 配布の
+wheel ＋ 別途 ONNX ランタイムと音声モデル `.vvm` が必要）、この環境では導入していない。
+VOICEVOX に載せ替える場合は**キャラクターごとに規約が異なり、クレジット表記が必須**なので
+各キャラの利用規約を確認すること。
 
 ## テロップ設計
 
@@ -91,5 +192,10 @@ KEEP_WORK=1 node scripts/compose/compose.mjs      # 中間ファイル(.compose/
 
 ## 出力仕様
 
-`content/2026-07-22_cat-ckd/cat-ckd_reel.mp4`
-40.00s / 1080×1920 / 30fps（1200フレーム）/ H.264 High / yuv420p / +faststart / 無音AAC 48kHz
+| ファイル | 内容 |
+|---|---|
+| `cat-ckd_reel.mp4` | 40.00s / 1080×1920 / 30fps（1200フレーム）/ H.264 High / yuv420p / +faststart / **無音**AAC 48kHz |
+| `cat-ckd_reel_voiced.mp4` | 54.10s / 同上 / **AAC 180kbps 48kHz ステレオ / -14.35 LUFS / -4.1 dBTP** |
+| `voice.wav` | 音声のみ（54.10s / 48kHz / -14 LUFS）。編集で差し替えるとき用 |
+| `voice.readings.txt` | 全セリフの読み（カナ）＋実測長。**誤読チェックの一次資料** |
+| `voice.credits.md` | キャプションに貼るクレジット文（CC BY 3.0 の表示義務） |

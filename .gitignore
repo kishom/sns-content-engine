@@ -35,3 +35,10 @@ scripts/char3d/debug/
 
 # compose.mjs の中間ファイル（KEEP_WORK=1 のとき残る・再生成可能）
 scripts/compose/.compose/
+
+# tts.mjs の中間ファイル（KEEP_WORK=1 のとき残る・再生成可能）
+scripts/compose/.voice/
+
+# 合成音声の書き出し（tts.mjs の出力・11MB・完全に再生成可能＝*.mp4 と同じ扱い）
+# ※ voice.timing.json と voice.readings.txt は小さく、レビュー資料になるのでコミットする
+content/**/voice.wav

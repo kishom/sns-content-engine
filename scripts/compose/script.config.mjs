@@ -5,6 +5,15 @@
 // **強調** は <em> に変換され、PAWSオレンジ #E8651A で描画される。
 //
 // t は「そのカットの中での秒数」。end を省略するとカット終端まで。
+//
+// ── 音声（tts.mjs）について ──
+// subs[].text がそのまま読み上げ台本になる（<br>・全角空白は除去される）。
+// pyopenjtalk が誤読する語だけ `read:` に**漢字を残したまま**直した文字列を書く
+// （全部かなにすると逆にアクセントが崩れる）。誤読の確認方法は README を参照。
+// `parts:` を書くと1つの字幕を複数の音声セグメントに分けて合成する（cut-05 のチェックチップ同期用）。
+//
+// ⚠️ start / end / dur は **無音版の時間割**。音声を付けるときは tts.mjs が
+//    実測の音声長からタイムラインを引き直す（voice.timing.json）ので、ここは触らなくてよい。
 
 export const PROJECT = '2026-07-22_cat-ckd';
 export const OUT_NAME = 'cat-ckd_reel';
@@ -20,7 +29,7 @@ export const CUTS = [
     telop: '猫が水をよく飲む＝<br><em>いいこと？</em>',
     subs: [
       { who: 'dog', text: 'めっちゃ水飲むね！えらい！', start: 0.15, end: 1.45 },
-      { who: 'cat', text: '…褒めてる場合じゃないかも', start: 1.55 },
+      { who: 'cat', text: '…褒めてる場合じゃないかも', read: '褒めてる場合じゃないかも', start: 1.55 },
     ],
   },
   {
@@ -40,7 +49,8 @@ export const CUTS = [
     disclaimer: DISCLAIMER,
     subs: [
       { who: 'dog', text: 'えっ、そうなの！？', start: 0.1, end: 1.2 },
-      { who: 'cat', text: '「急によく飲む・おしっこが増えた」は体からのサインのことがある', start: 1.3, end: 3.6 },
+      { who: 'cat', text: '「急によく飲む・おしっこが増えた」は体からのサインのことがある',
+        read: '「急によく飲む、おしっこが増えた」は体からのサインのことがある', start: 1.3, end: 3.6 },
       { who: 'cat', text: 'これを多飲多尿っていうんだ', start: 3.7 },
     ],
   },
@@ -61,15 +71,21 @@ export const CUTS = [
     telop: 'この3つを<em>メモ</em>',
     // 3Dシーンのアイコン（水皿 / トイレ / 体重計）の x 中心に合わせて配置。
     // アイコンは上下にゆれるので、ゆれの上限（y≈608）より上のバンドに置く。
+    // anchorPart = subs[1].parts[n] の実測開始に合わせる（音声版）。start は無音版のフォールバック。
     checkChips: [
-      { text: '水', cx: 208, start: 2.2 },
-      { text: 'おしっこ', cx: 587, start: 2.8 },
-      { text: '体重', cx: 946, start: 3.4 },
+      { text: '水', cx: 208, start: 2.2, anchorPart: 0 },
+      { text: 'おしっこ', cx: 587, start: 2.8, anchorPart: 1 },
+      { text: '体重', cx: 946, start: 3.4, anchorPart: 2 },
     ],
     subs: [
       { who: 'dog', text: 'どうやって気づけばいいの！？', start: 0.1, end: 1.7 },
       // 1行に収まらないので改行位置を明示（③が単独で行送りされるのを防ぐ）
-      { who: 'cat', text: '①水を飲む量　②おしっこの量・色<br>③体重', start: 1.8, end: 4.9 },
+      {
+        who: 'cat', text: '①水を飲む量　②おしっこの量・色<br>③体重', start: 1.8, end: 4.9,
+        // 3セグメントに分けて合成する。checkChips の anchorPart が各セグメントの
+        // 実測開始時刻に吸着するので、「水」と言った瞬間にチップが出る。
+        parts: ['1つめ、水を飲む量', '2つめ、おしっこの量と色', '3つめ、体重'],
+      },
       { who: 'cat', text: 'この3つをメモしておくと診察で役立つよ', start: 5.0 },
     ],
   },
@@ -78,7 +94,13 @@ export const CUTS = [
     dur: 6.0, // 台本 27-33s（素材6s → 等尺）
     telop: '7歳からは<em>定期健診</em>',
     subs: [
-      { who: 'cat', text: '7歳を過ぎたら、年1〜2回の<br>健康診断（血液・尿検査）で', start: 0.15, end: 3.2 },
+      {
+        who: 'cat', text: '7歳を過ぎたら、年1〜2回の<br>健康診断（血液・尿検査）で',
+        // 「年1〜2回」は トシイチ〜ニカイ と誤読される（〜が読まれない／年がトシになる）。
+        // 「1年に1回から2回」で イチネンニイッカイカラニカイ になる。
+        read: '7歳を過ぎたら、1年に1回から2回の健康診断、血液や尿の検査で',
+        start: 0.15, end: 3.2,
+      },
       { who: 'cat', text: '早めに見つけられることがあるよ', start: 3.3 },
     ],
   },
@@ -99,7 +121,13 @@ export const CUTS = [
   },
 ];
 
+// voice = pyopenjtalk の話者づくり（声質は1種類しかないのでピッチ・話速・フォルマントで作り分ける）
+//   speed    : 話速（1.0=標準）
+//   halfTone : ピッチ（半音）
+//   formant  : 声道の太さ。asetrate で標本化レートを変えて atempo で尺を戻す
+//              （<1 で太く低く＝大きい体、>1 で細く高く＝小さい体）
+//   maxPause : セリフ内部の間の上限（秒）。Open JTalk は読点で 0.6 秒も空けるので詰める
 export const SPEAKERS = {
-  cat: { name: 'ネコネコ' }, // クリーム色チップ
-  dog: { name: 'イヌイヌ' }, // タン色チップ
+  cat: { name: 'ネコネコ', voice: { speed: 0.94, halfTone: -2.0, formant: 0.970, maxPause: 0.30 } }, // 落ち着いた・ゆっくり低め
+  dog: { name: 'イヌイヌ', voice: { speed: 1.12, halfTone: 2.5, formant: 1.045, maxPause: 0.20 } },  // 元気・速め高め
 };
