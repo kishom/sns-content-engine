@@ -56,7 +56,10 @@ ok(Number(meas.input_tp) <= -1.0, `トゥルーピーク ${meas.input_tp} dBTP �
 
 // ── 3) 発話の実開始 vs 字幕開始 ──
 console.log('\n3) 字幕と音声の同期（silencedetect の実測発話区間 vs timing.json）');
-const { err: sdErr } = await sh(FFMPEG, ['-hide_banner', '-i', VIDEO, '-af', 'silencedetect=noise=-45dB:d=0.12', '-f', 'null', '-']);
+// ⚠️ d（無音とみなす最短長）は **台本上いちばん短い「間」より短く**すること。
+//    フックは食い気味に返すため cut-01 の gap が 0.07s しかなく、d=0.12 だと
+//    イヌとネコの2発話が1区間に融合して「字幕とズレている」と誤検知した（実際は正常）。
+const { err: sdErr } = await sh(FFMPEG, ['-hide_banner', '-i', VIDEO, '-af', 'silencedetect=noise=-45dB:d=0.06', '-f', 'null', '-']);
 const speech = [];   // 実測の発話区間 [start,end]
 {
   let cur = 0;

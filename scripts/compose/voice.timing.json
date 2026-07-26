@@ -2,15 +2,16 @@
   "cuts": [
     {
       "id": "cut-01",
-      "dur": 4.033,
+      "dur": 3,
       "origDur": 3,
+      "needed": 2.599,
       "subs": [
         {
-          "start": 0.18,
-          "end": 2.015
+          "start": 0.03,
+          "end": 1.432
         },
         {
-          "start": 2.095,
+          "start": 1.252,
           "end": null
         }
       ],
@@ -18,11 +19,12 @@
     },
     {
       "id": "cut-02",
-      "dur": 4,
+      "dur": 3.4,
       "origDur": 4,
+      "needed": 3.229,
       "subs": [
         {
-          "start": 0.18,
+          "start": 0.1,
           "end": null
         }
       ],
@@ -30,19 +32,20 @@
     },
     {
       "id": "cut-03",
-      "dur": 8.4,
+      "dur": 6.967,
       "origDur": 5,
+      "needed": 6.957,
       "subs": [
         {
-          "start": 0.18,
-          "end": 1.335
+          "start": 0.1,
+          "end": 1.189
         },
         {
-          "start": 1.415,
-          "end": 6.31
+          "start": 1.139,
+          "end": 5.3
         },
         {
-          "start": 6.39,
+          "start": 5.25,
           "end": null
         }
       ],
@@ -50,15 +53,16 @@
     },
     {
       "id": "cut-04",
-      "dur": 10.167,
+      "dur": 8.4,
       "origDur": 7,
+      "needed": 8.389,
       "subs": [
         {
-          "start": 0.18,
-          "end": 5.528
+          "start": 0.1,
+          "end": 4.713
         },
         {
-          "start": 5.608,
+          "start": 4.663,
           "end": null
         }
       ],
@@ -66,48 +70,50 @@
     },
     {
       "id": "cut-05",
-      "dur": 11.433,
+      "dur": 9.233,
       "origDur": 8,
+      "needed": 9.201,
       "subs": [
         {
-          "start": 0.18,
-          "end": 1.802
+          "start": 0.1,
+          "end": 1.448
         },
         {
-          "start": 1.882,
-          "end": 7.919
+          "start": 1.398,
+          "end": 6.534
         },
         {
-          "start": 7.999,
+          "start": 6.484,
           "end": null
         }
       ],
       "checkChips": [
         {
-          "start": 1.882,
+          "start": 1.398,
           "end": null
         },
         {
-          "start": 3.92,
+          "start": 3.051,
           "end": null
         },
         {
-          "start": 6.265,
+          "start": 5.075,
           "end": null
         }
       ]
     },
     {
       "id": "cut-06",
-      "dur": 9.067,
+      "dur": 7.5,
       "origDur": 6,
+      "needed": 7.494,
       "subs": [
         {
-          "start": 0.18,
-          "end": 6.521
+          "start": 0.1,
+          "end": 5.537
         },
         {
-          "start": 6.601,
+          "start": 5.487,
           "end": null
         }
       ],
@@ -115,15 +121,16 @@
     },
     {
       "id": "cut-07",
-      "dur": 7,
+      "dur": 6,
       "origDur": 7,
+      "needed": 5.193,
       "subs": [
         {
-          "start": 0.18,
-          "end": 2.147
+          "start": 0.1,
+          "end": 1.615
         },
         {
-          "start": 2.227,
+          "start": 1.565,
           "end": null
         }
       ],
@@ -132,15 +139,48 @@
   ],
   "meta": {
     "fps": 30,
-    "lead": 0.18,
-    "gap": 0.38,
-    "partGap": 0.2,
-    "tail": 0.35,
-    "hold": 0.3,
-    "total": 54.1,
+    "lead": 0.1,
+    "gap": 0.2,
+    "partGap": 0.12,
+    "tail": 0.18,
+    "hold": 0.25,
+    "total": 44.5,
     "voiceWav": "voice.wav",
     "targetLufs": -14,
-    "generatedAt": "2026-07-26T21:21:26.121Z",
-    "tts": "pyopenjtalk 0.4.1 (Open JTalk / HTS mei_normal)"
+    "generatedAt": "2026-07-26T22:27:27.536Z",
+    "tts": "VOICEVOX CORE 0.15.7 (CPU / ONNX Runtime 1.13.1)",
+    "speakers": {
+      "cat": {
+        "name": "ネコネコ",
+        "voice": {
+          "styleId": 9,
+          "label": "波音リツ／ノーマル",
+          "speedScale": 1.07,
+          "pitchScale": 0,
+          "intonationScale": 1.05,
+          "pauseScale": 0.42
+        }
+      },
+      "dog": {
+        "name": "イヌイヌ",
+        "voice": {
+          "styleId": 8,
+          "label": "春日部つむぎ／ノーマル",
+          "speedScale": 1.4,
+          "pitchScale": 0,
+          "intonationScale": 1.1,
+          "pauseScale": 0.4
+        }
+      }
+    },
+    "tempo": {
+      "moraPerSec": 8.49,
+      "lead": 0.1,
+      "gap": 0.2,
+      "partGap": 0.12,
+      "tail": 0.18,
+      "speedMult": 1,
+      "pauseMult": 1
+    }
   }
 }
