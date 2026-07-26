@@ -4,14 +4,14 @@
       "id": "cut-01",
       "dur": 3,
       "origDur": 3,
-      "needed": 2.599,
+      "needed": 2.582,
       "subs": [
         {
           "start": 0.03,
-          "end": 1.432
+          "end": 1.453
         },
         {
-          "start": 1.252,
+          "start": 1.253,
           "end": null
         }
       ],
@@ -32,20 +32,20 @@
     },
     {
       "id": "cut-03",
-      "dur": 6.967,
+      "dur": 7.067,
       "origDur": 5,
-      "needed": 6.957,
+      "needed": 7.048,
       "subs": [
         {
           "start": 0.1,
-          "end": 1.189
+          "end": 1.28
         },
         {
-          "start": 1.139,
-          "end": 5.3
+          "start": 1.23,
+          "end": 5.391
         },
         {
-          "start": 5.25,
+          "start": 5.341,
           "end": null
         }
       ],
@@ -70,34 +70,34 @@
     },
     {
       "id": "cut-05",
-      "dur": 9.233,
+      "dur": 9.333,
       "origDur": 8,
-      "needed": 9.201,
+      "needed": 9.301,
       "subs": [
         {
           "start": 0.1,
-          "end": 1.448
+          "end": 1.548
         },
         {
-          "start": 1.398,
-          "end": 6.534
+          "start": 1.498,
+          "end": 6.634
         },
         {
-          "start": 6.484,
+          "start": 6.584,
           "end": null
         }
       ],
       "checkChips": [
         {
-          "start": 1.398,
+          "start": 1.498,
           "end": null
         },
         {
-          "start": 3.051,
+          "start": 3.151,
           "end": null
         },
         {
-          "start": 5.075,
+          "start": 5.175,
           "end": null
         }
       ]
@@ -123,14 +123,14 @@
       "id": "cut-07",
       "dur": 6,
       "origDur": 7,
-      "needed": 5.193,
+      "needed": 5.29,
       "subs": [
         {
           "start": 0.1,
-          "end": 1.615
+          "end": 1.712
         },
         {
-          "start": 1.565,
+          "start": 1.662,
           "end": null
         }
       ],
@@ -144,10 +144,10 @@
     "partGap": 0.12,
     "tail": 0.18,
     "hold": 0.25,
-    "total": 44.5,
+    "total": 44.7,
     "voiceWav": "voice.wav",
     "targetLufs": -14,
-    "generatedAt": "2026-07-26T22:27:27.536Z",
+    "generatedAt": "2026-07-26T23:50:44.113Z",
     "tts": "VOICEVOX CORE 0.15.7 (CPU / ONNX Runtime 1.13.1)",
     "speakers": {
       "cat": {
@@ -166,7 +166,7 @@
         "voice": {
           "styleId": 8,
           "label": "春日部つむぎ／ノーマル",
-          "speedScale": 1.4,
+          "speedScale": 1.26,
           "pitchScale": 0,
           "intonationScale": 1.1,
           "pauseScale": 0.4
@@ -174,7 +174,7 @@
       }
     },
     "tempo": {
-      "moraPerSec": 8.49,
+      "moraPerSec": 8.43,
       "lead": 0.1,
       "gap": 0.2,
       "partGap": 0.12,

@@ -57,9 +57,14 @@ ok(Number(meas.input_tp) <= -1.0, `トゥルーピーク ${meas.input_tp} dBTP �
 // ── 3) 発話の実開始 vs 字幕開始 ──
 console.log('\n3) 字幕と音声の同期（silencedetect の実測発話区間 vs timing.json）');
 // ⚠️ d（無音とみなす最短長）は **台本上いちばん短い「間」より短く**すること。
-//    フックは食い気味に返すため cut-01 の gap が 0.07s しかなく、d=0.12 だと
-//    イヌとネコの2発話が1区間に融合して「字幕とズレている」と誤検知した（実際は正常）。
-const { err: sdErr } = await sh(FFMPEG, ['-hide_banner', '-i', VIDEO, '-af', 'silencedetect=noise=-45dB:d=0.06', '-f', 'null', '-']);
+//    フックは食い気味に返すため cut-01 の gap が詰まっており、d が大きいと
+//    イヌとネコの2発話が1区間に融合して「字幕とズレている」と誤検知する（実際は正常）。
+//    この罠は2回踏んだ（d=0.12 で融合 → d=0.06 に下げたが gap を 0.05 にしたら再発）。
+//    ∴ **定数で持たず、設定上の最小 gap から毎回導出する**。config を触っても壊れない。
+const MIN_GAP = Math.min(...CUTS.map((c) => c.tempo?.gap ?? 0.20));
+const SD_D = Math.max(0.02, Math.min(0.06, MIN_GAP * 0.7));
+console.log(`  （無音検出 d=${SD_D.toFixed(3)}s ← 設定上の最小 gap ${MIN_GAP.toFixed(2)}s から導出）`);
+const { err: sdErr } = await sh(FFMPEG, ['-hide_banner', '-i', VIDEO, '-af', `silencedetect=noise=-45dB:d=${SD_D}`, '-f', 'null', '-']);
 const speech = [];   // 実測の発話区間 [start,end]
 {
   let cur = 0;

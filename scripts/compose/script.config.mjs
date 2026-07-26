@@ -29,7 +29,9 @@ export const CUTS = [
     // フックは食い気味に返す。ネコが「褒めてる場合じゃないかも」を **2.5秒以内に言い終わる**
     // のがこの台本のリテンション要件（02-script.md）なので、ここだけ間を詰める。
     // ⚠️ この数字を緩めると要件を割る。tts.mjs が毎回検算してログに出す。
-    tempo: { lead: 0.03, gap: 0.07, speed: 1.10 },
+    // ⚠️ イヌの話速を 1.40→1.26 に落とした際、ここが 2.52s で要件を割った。
+    //    フックだけは「食い気味」が仕様なので、この係数で吸収する（speed 1.10→1.18）。
+    tempo: { lead: 0.03, gap: 0.05, speed: 1.18 },
     telop: '猫が水をよく飲む＝<br><em>いいこと？</em>',
     subs: [
       { who: 'dog', text: 'めっちゃ水飲むね！えらい！', start: 0.15, end: 1.45 },
@@ -160,7 +162,9 @@ export const SPEAKERS = {
     name: 'イヌイヌ',
     voice: {
       styleId: 8, label: '春日部つむぎ／ノーマル',
-      speedScale: 1.40, pitchScale: 0, intonationScale: 1.10, pauseScale: 0.40,
+      // 1.40（9.2モーラ/秒）は速すぎるとのフィードバック（2026-07-26 Kisho）。
+      // ネコ（8.4）より速い＝元気なボケ役、という性格差は残しつつ落ち着かせる。
+      speedScale: 1.26, pitchScale: 0, intonationScale: 1.10, pauseScale: 0.40,
     },
   },
 };
