@@ -15,7 +15,7 @@
 | 3-7s | 🐱「猫はもともと、**あまり水を飲まない**動物なんだ」 | 猫はもともと**あまり水を飲まない** | 水皿アップ、猫がのんびり |
 | 7-12s | 🐶「えっ、そうなの!?」🐱「『急によく飲む・おしっこが増えた』は体からのサインのことがある。**多飲多尿**っていうんだ」 | 急に水↑おしっこ↑は体のサインかも | 犬がびっくり、猫が真顔で強調 |
 | 12-19s | 🐱「代表的なのが**慢性腎臓病**。シニア猫にとても多いと言われてるよ。ほかの病気のこともあるから、まず変化に気づくことが大事」 | シニア猫に多い慢性腎臓病 | 猫がどや顔で解説 |
-| 19-27s | 🐶「どうやって気づけばいいの!?」🐱「①水を飲む量 ②おしっこの量・色 ③体重。この3つをメモしておくと診察で役立つよ」 | ✅水 ✅おしっこ ✅体重 | 犬がハッ、猫がどや顔（3アイコン表示） |
+| 19-27s | 🐶「どうやって気づけばいいの!?」🐱「①水を飲む量 ②おしっこの量 ③体重。この3つをメモしておくと診察で役立つよ」 | ✅水 ✅おしっこ ✅体重 | 犬がハッ、猫がどや顔（3アイコン表示） |
 | 27-33s | 🐱「7歳を過ぎたら、**年1〜2回の健康診断**（血液・尿検査）で早めに見つけられることがあるよ」 | 7歳からは定期健診 | 猫がのんびり、犬がこくり |
 | 33-40s | 🐶「このチェック、保存しとこ！」🐱「気になる変化があったら、かかりつけの先生に相談してね」 | ✅水 ✅おしっこ ✅体重（再掲）＋📌あとで見返せるように保存 | チェックリスト再掲（合成レイヤー）、2人で笑顔 |
 
@@ -27,14 +27,42 @@
 > - **保存価値の核＝3項目チェックリスト**。末尾で再掲して「このチェック、保存しとこ！」で保存行動に直結させる
 
 ## エビデンス
+
+> ⚠️ **検証状況（2026-07-26）**: 主張ごとの突き合わせ検証を実施したが、**この環境からは
+> 医学文献に1件もアクセスできなかった**（egress制限で全ホスト403）。下表の対応付けは
+> 検索結果ベースの当たり付けであり、**原文照合は未了**。判定と根拠の詳細＝
+> [`03-evidence.md`](03-evidence.md)。**公開前に原文照合＋獣医師レビューが必要**。
+
+| 主張（該当行） | 対応する資料 | 状態 |
+|---|---|---|
+| 猫はもともと自発的にはあまり水を飲まない（L15） | Merck Vet Manual ほか | 原文未照合 |
+| 急な多飲・多尿は体のサインのことがある＝多飲多尿（L16-17） | Merck Vet Manual / Cornell | 原文未照合 |
+| 代表的な原因が慢性腎臓病（L17） | ISFM Consensus Guidelines (JFMS 2016) | 原文未照合 |
+| シニア猫にとても多い（L17） | ISFM Consensus Guidelines (JFMS 2016) | **該当記述を確認**（"CKD is one of the most commonly diagnosed diseases in older cats"）※別セッションでの確認 |
+| ほかの病気のこともある（L17） | Merck / Cornell（PU/PDの鑑別は30以上） | 原文未照合・**削除禁止** |
+| 飲水量・尿量・体重の記録が診察で役立つ（L18） | ISFM / Freeman et al. JVIM 2016（体重減少がCKD診断に先行・DOI 10.1111/jvim.14561） | 原文未照合 |
+| 7歳から年1〜2回の健診（L19） | ISFM（7歳超で6か月ごと・検査は年1回以上）/ AAHA-AAFP Life Stage（mature adult 7〜10歳・最低年1回） | 原文未照合。2系統の指針が独立に7歳を使う点は検索レベルで確認 |
+
+**削除した主張**: 尿の「色」（旧L18「おしっこの量・色」）。学会指針・査読文献に根拠が見つからず
+（検索で出たのは猫砂メーカーとペット用品ブログのみ）、猫砂と光条件で見え方がぶれ
+「薄い＝腎臓病」の自己診断を誘発するため。**判定C → 削除**（2026-07-26）。
+
+**出典から外したもの**: IRIS（http://www.iris-kidney.com/）。診断**後**のステージング枠組み
+（Cr/SDMA・蛋白尿・血圧サブステージ）であり、本台本のどの主張も担保しない典型的な装飾的引用だった。
+
 - ISFM Consensus Guidelines on the Diagnosis and Management of Feline Chronic Kidney Disease (J Feline Med Surg 2016): https://journals.sagepub.com/doi/10.1177/1098612X16631234
-- IRIS (International Renal Interest Society) — CKD staging & guidelines: http://www.iris-kidney.com/
 - Merck Veterinary Manual — Renal Dysfunction in Small Animals: https://www.merckvetmanual.com/urinary-system/noninfectious-diseases-of-the-urinary-system-in-small-animals/renal-dysfunction-in-dogs-and-cats
-- Cornell Feline Health Center — Chronic Kidney Disease: https://www.vet.cornell.edu/departments-centers-and-institutes/cornell-feline-health-center/health-information/feline-health-topics/chronic-kidney-disease
+- Cornell Feline Health Center — Chronic Kidney Disease（飼い主向け解説。一次資料ではない）: https://www.vet.cornell.edu/departments-centers-and-institutes/cornell-feline-health-center/health-information/feline-health-topics/chronic-kidney-disease
 - AAHA/AAFP Feline Life Stage Guidelines（シニア期の健診頻度）: https://www.aaha.org/resources/2021-aaha-aafp-feline-life-stage-guidelines/
+- Freeman LM et al. (JVIM 2016) 体重減少がCKD診断に先行: https://doi.org/10.1111/jvim.14561
 
 ## 配信メモ
-- 病気啓蒙シリーズ第1弾。入口＝犬のボケ（多飲を褒める）→意外性で掴む。CKDは高齢猫で非常に有病率が高く、多飲多尿が代表的な初期サイン＝啓蒙価値が最も高いテーマ
+- 病気啓蒙シリーズ第1弾。入口＝犬のボケ（多飲を褒める）→意外性で掴む。CKDは高齢猫で有病率が高く、多飲多尿が代表的なサイン＝啓蒙価値が最も高いテーマ
+- ⚠️ **「初期サイン」と書かないこと**（2026-07-26 検証で判明）。猫は犬より尿濃縮能を長く保つため
+  PU/PDは必ずしも早期には現れず、無症状期がある（"cats maintain their urine concentrating ability
+  further into the disease process than dogs" ※原文未照合）。「多飲多尿に気づけば早期発見できる」と
+  いう過剰な期待を煽る企画を続編で作らないための注意。**この事実はむしろ L19 の定期健診パートの
+  必然性を強める**（気づけないからこそ検査で拾う）
 - **表現ルール**: 「〜のことがある」「〜と言われている」で断定回避。多飲多尿の原因を**CKDに一本化して見せない**（「ほかの病気のこともある」を必ず残す）。診断はしない。出口は必ず「かかりつけの先生に相談」
 - 不安を煽らない：「怖い病気」ではなく「早く気づけば**できることが増える**」のトーンで
 - **病院名・院への誘導リンクをキャプション/プロフィールに付けない**（特定性が立つと獣医療広告規制の対象になり得る。このシリーズは一般啓蒙に徹する）

@@ -70,9 +70,9 @@
     },
     {
       "id": "cut-05",
-      "dur": 9.333,
+      "dur": 8.967,
       "origDur": 8,
-      "needed": 9.301,
+      "needed": 8.951,
       "subs": [
         {
           "start": 0.1,
@@ -80,10 +80,10 @@
         },
         {
           "start": 1.498,
-          "end": 6.634
+          "end": 6.285
         },
         {
-          "start": 6.584,
+          "start": 6.235,
           "end": null
         }
       ],
@@ -97,7 +97,7 @@
           "end": null
         },
         {
-          "start": 5.175,
+          "start": 4.826,
           "end": null
         }
       ]
@@ -144,10 +144,10 @@
     "partGap": 0.12,
     "tail": 0.18,
     "hold": 0.25,
-    "total": 44.7,
+    "total": 44.333,
     "voiceWav": "voice.wav",
     "targetLufs": -14,
-    "generatedAt": "2026-07-26T23:50:44.113Z",
+    "generatedAt": "2026-07-27T03:19:04.954Z",
     "tts": "VOICEVOX CORE 0.15.7 (CPU / ONNX Runtime 1.13.1)",
     "speakers": {
       "cat": {
