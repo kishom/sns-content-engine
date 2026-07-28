@@ -2,6 +2,7 @@
 // 使い方: node render.mjs [shot ...]   (無指定 = 納品4ショット)
 //   node render.mjs expressions        ← 表情8枚 (assets/char-ref/expressions/)
 //   node render.mjs cuts               ← cat-ckd の7カット構図 (content/2026-07-22_cat-ckd/)
+//   node render.mjs cuts:dog-perio     ← dog-perio の7カット構図 (content/2026-07-29_dog-perio/)
 //   node render.mjs cut-05 expr_neko_doya   ← 個別
 //   node render.mjs neko_yaw_0 neko_yaw_90  ← デバッグターンテーブル
 // 環境変数 OUT_OVERRIDE=<dir> で納品4ショットの出力先を差し替え（GO済み正本を壊さず検証したいとき）
@@ -18,6 +19,7 @@ const OUT = process.env.OUT_OVERRIDE
   : path.resolve(here, '../../assets/char-ref');
 const EXPR_OUT = path.resolve(here, '../../assets/char-ref/expressions');
 const CUT_OUT = path.resolve(here, '../../content/2026-07-22_cat-ckd');
+const DP_CUT_OUT = path.resolve(here, '../../content/2026-07-29_dog-perio');
 const DEBUG_OUT = path.resolve(here, 'debug');
 
 // 納品ショット（1080x1350 / 1080x1920 を deviceScaleFactor=2 で撮影 → 2160x2700 / 2160x3840）
@@ -39,11 +41,16 @@ const EXPR_SHOTS = Object.entries(EXPRESSIONS).flatMap(([kind, list]) =>
 
 // cat-ckd 7カット構図: 9:16 1080x1920 等倍・文字は焼き込まない
 const CUT_SHOTS = ['cut-01', 'cut-02', 'cut-03', 'cut-04', 'cut-05', 'cut-06', 'cut-07'];
+// dog-perio 7カット構図: shot 名は `dp-` 接頭辞（scene.js の CUTS キー）／出力は cut-0N.png
+const DP_CUT_SHOTS = CUT_SHOTS.map((c) => `dp-${c}`);
 
 function specFor(name) {
   if (DELIVERABLES[name]) return { name, ...DELIVERABLES[name], dpr: 2, out: OUT };
   if (name.startsWith('expr_')) return { name, w: 1080, h: 1350, dpr: 1, out: EXPR_OUT, file: exprFile(name) };
   if (CUT_SHOTS.includes(name)) return { name, w: 1080, h: 1920, dpr: 1, out: CUT_OUT };
+  if (DP_CUT_SHOTS.includes(name)) {
+    return { name, w: 1080, h: 1920, dpr: 1, out: DP_CUT_OUT, file: `${name.replace(/^dp-/, '')}.png` };
+  }
   return { name, w: 1080, h: 1350, dpr: 1, out: DEBUG_OUT };
 }
 // expr_neko_doya -> neko_doya.png
@@ -51,7 +58,10 @@ function exprFile(name) { return name.replace(/^expr_/, '') + '.png'; }
 
 const argShots = process.argv.slice(2);
 const expanded = argShots.flatMap((a) =>
-  a === 'expressions' ? EXPR_SHOTS : a === 'cuts' ? CUT_SHOTS : a === 'deliverables' ? Object.keys(DELIVERABLES) : [a]
+  a === 'expressions' ? EXPR_SHOTS
+    : a === 'cuts' || a === 'cuts:cat-ckd' ? CUT_SHOTS
+    : a === 'cuts:dog-perio' ? DP_CUT_SHOTS
+    : a === 'deliverables' ? Object.keys(DELIVERABLES) : [a]
 );
 const shots = (expanded.length ? expanded : Object.keys(DELIVERABLES)).map(specFor);
 

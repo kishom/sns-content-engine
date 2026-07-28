@@ -48,6 +48,12 @@ export const COL = {
   crossGreenDeep: '#8FC7A3',
   sparkle: '#FFF1CF',
   tear: '#BFE3F0',
+  // --- dog-perio（歯みがき回）の小道具 ---
+  brushBody: '#8CC9E4',    // 歯ブラシの柄＋ヘッド（実物と同じく「柄が色・毛が白」が最も読める）
+  brushBristle: '#FCFDFE',
+  weekPlate: '#D5EAF6',
+  weekBar: '#B4D8EC',
+  weekCell: '#FBFDFE',
 };
 
 // ---------- deterministic RNG（微起毛スペックルの再現性のため） ----------
@@ -479,6 +485,72 @@ export function makeCross() {
   return grp;
 }
 
+// 歯ブラシ（dog-perio・新規）: 細い円柱の柄 + 角丸のヘッド + 毛のパッド。
+// 長軸 = +Y（原点は柄の中ほど）。マット質感でキャラに馴染ませる（makeWaterBowl と同レベルの単純形状）。
+// ※実測の教訓: 毛を柄と同系色にすると「ただの棒」に見える。実物と同じく
+//   「柄＋ヘッド＝色 / 毛＝白」にするとシルエットが小さくても歯ブラシとして読める。
+export function makeToothbrush() {
+  const grp = new THREE.Group();
+  const body = softMat(COL.brushBody);
+
+  const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.052, 0.064, 0.95, 28), body);
+  handle.position.y = -0.36;
+  grp.add(handle);
+  // 柄尻の丸み（切りっぱなしの円柱端は硬く見える）
+  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.064, 24, 18), body);
+  cap.position.y = -0.835;
+  grp.add(cap);
+
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.052, 0.24, 24), body);
+  neck.position.y = 0.20;
+  grp.add(neck);
+
+  const head = new THREE.Mesh(roundedBoxGeometry(0.32, 0.50, 0.17, 0.082, 8), body);
+  head.position.y = 0.52;
+  grp.add(head);
+
+  // 毛（カメラ側=+z に少しだけ盛り上げる）＋ 房のスジ
+  const bristleMat = softMat(COL.brushBristle);
+  const pad = new THREE.Mesh(roundedBoxGeometry(0.26, 0.40, 0.12, 0.045, 6), bristleMat);
+  pad.position.set(0, 0.53, 0.10);
+  grp.add(pad);
+  for (let i = 0; i < 3; i++) {
+    const tuft = new THREE.Mesh(roundedBoxGeometry(0.22, 0.055, 0.10, 0.026, 4), bristleMat);
+    tuft.position.set(0, 0.65 - i * 0.12, 0.145);
+    grp.add(tuft);
+  }
+  return grp;
+}
+
+// 曜日カレンダープレート（dog-perio・新規/任意）: makeIconPlate と同じ角丸の枠に7マスを並べ●を置くだけ。
+// ※文字は入れない（アイコンの文字化NG）。●は1マスおき＝「頻度／リズム」を示す装飾で、
+//   具体的な主張はテロップ側が担う。
+export function makeWeekPlate() {
+  const grp = new THREE.Group();
+  const plate = new THREE.Mesh(roundedBoxGeometry(2.30, 0.94, 0.20, 0.24, 8), softMat(COL.weekPlate));
+  grp.add(plate);
+  // 見出しバー（カレンダーの「上の帯」＝これがあるとカレンダーに読める）
+  const bar = new THREE.Mesh(roundedBoxGeometry(1.98, 0.13, 0.08, 0.055, 5), softMat(COL.weekBar));
+  bar.position.set(0, 0.29, 0.115);
+  grp.add(bar);
+
+  const cellMat = softMat(COL.weekCell);
+  const dotMat = softMat(COL.crossGreen);
+  for (let i = 0; i < 7; i++) {
+    const x = (i - 3) * 0.285;
+    const cell = new THREE.Mesh(roundedBoxGeometry(0.235, 0.36, 0.08, 0.055, 5), cellMat);
+    cell.position.set(x, -0.09, 0.115);
+    grp.add(cell);
+    if (i % 2 === 0) {
+      const dot = new THREE.Mesh(new THREE.CylinderGeometry(0.068, 0.068, 0.06, 24), dotMat);
+      dot.rotation.x = Math.PI / 2;
+      dot.position.set(x, -0.09, 0.175);
+      grp.add(dot);
+    }
+  }
+  return grp;
+}
+
 // アイコンプレート（角丸の板 + ミニ小道具）= 浮かぶピクトに見せる
 // 実測の教訓: ①板が白いと中身と同化して真っ白なカードに見える → パステルで色差をつける
 //             ②カメラより高い位置に置くと器/トイレ/体重計を「下から」見ることになり中身が読めない
@@ -873,6 +945,102 @@ const CUTS = {
     addSparkles([
       [-1.85, 3.30, 0.3, 0.85], [-1.15, 3.80, -0.3, 0.6], [0.20, 3.42, 0.5, 0.7],
       [1.42, 3.86, -0.2, 0.75], [1.86, 3.12, 0.4, 0.95],
+    ]);
+    duoCam(13.9, 2.76);
+  },
+
+  // ============================================================
+  // dog-perio（2026-07-29 犬の歯周病）7カット
+  // 正本 = content/2026-07-29_dog-perio/05-animate.md
+  // ★ネコ左・イヌ右は同じ。今回は**イヌが当事者**（前回は猫）＝表情の重心が入れ替わる
+  // ============================================================
+
+  // 0-4s フック: 犬が胸を張って全力 / 猫はやれやれ / 歯ブラシ1本
+  'dp-cut-01': () => {
+    placeDuo({ expr: 'yareyare' }, { expr: 'zenryoku', bounce: 1, earUp: true, tilt: -0.06 });
+    const brush = makeToothbrush();
+    brush.position.set(0.16, 3.14, 0.9);
+    brush.rotation.z = -0.30;
+    brush.scale.setScalar(1.04);
+    scene.add(brush);
+    addSparkles([[1.94, 3.26, 0.5, 0.92], [2.06, 2.66, 0.3, 0.62], [1.56, 3.72, 0.0, 0.58]]);
+    duoCam();
+  },
+
+  // 4-9s 猫がのんびり肯定（手を上げる） / 犬が嬉しく小さく跳ねる / 歯ブラシ継続
+  'dp-cut-02': () => {
+    placeDuo(
+      { expr: 'nonbiri', pawRaise: 'left' },
+      { expr: 'egao', bounce: 0.35, earUp: true, tilt: -0.04 }
+    );
+    const brush = makeToothbrush();
+    brush.position.set(0.16, 3.12, 0.9);
+    brush.rotation.z = -0.26;
+    brush.scale.setScalar(1.04);
+    scene.add(brush);
+    duoCam(13.9, 2.66);
+  },
+
+  // 9-15s 猫がどや顔で2つ数える / 犬がハッと驚く / 曜日カレンダープレート
+  'dp-cut-03': () => {
+    placeDuo(
+      { expr: 'doya', pawRaise: 'left' },
+      { expr: 'hatto', bounce: 0.5, earUp: true }
+    );
+    const plate = makeWeekPlate();
+    plate.position.set(0.16, 3.38, 1.0);
+    plate.scale.setScalar(0.90);
+    plate.rotation.z = 0.02;
+    plate.rotation.y = -0.08;
+    // ★カメラより高い位置の板は「下から」見ることになり中身が読めない（README 教訓7）
+    //   → 板ごと手前に倒してマスと●をカメラへ向ける
+    plate.rotation.x = 0.30;
+    scene.add(plate);
+    duoCam(14.0, 2.90);
+  },
+
+  // 15-21s 犬がしょんぼりうつむく / 猫が真顔で解説（手を上げる）
+  'dp-cut-04': () => {
+    placeDuo(
+      { expr: 'neutral', pawRaise: 'left', nod: 0.05 },
+      { expr: 'shombori', earDroop: true, nod: 0.12 }
+    );
+    duoCam(13.8, 2.58);
+  },
+
+  // 21-28s ★山場 猫が真顔で3回強調 / 犬はハッとしたまま / 緑の十字（後半にふわっと入る）
+  // ※カット内で表情を切り替えられないので、カメラを一段寄せて間を持たせる
+  'dp-cut-05': () => {
+    placeDuo(
+      { expr: 'neutral', pawRaise: 'left', nod: 0.06 },
+      { expr: 'hatto', bounce: 0.3, earUp: true }
+    );
+    const cross = makeCross();
+    cross.position.set(0.18, 3.26, -1.2);
+    cross.scale.setScalar(0.92);
+    cross.rotation.z = 0.06;
+    scene.add(cross);
+    duoCam(13.3, 2.52);
+  },
+
+  // 28-34s 犬が期待顔で聞く / 猫がのんびり首を振る（3ステップカードは合成レイヤー＝3Dプロップは置かない）
+  'dp-cut-06': () => {
+    placeDuo(
+      { expr: 'nonbiri', pawRaise: 'left', tilt: 0.05 },
+      { expr: 'egao', bounce: 0.3, earUp: true }
+    );
+    duoCam(13.9, 2.70);
+  },
+
+  // 34-40s 2人で笑顔・同位相にふわっと跳ねる（カード再掲は合成レイヤー）
+  'dp-cut-07': () => {
+    placeDuo(
+      { expr: 'niko', bounce: 0.5, tilt: 0.04 },
+      { expr: 'niko', bounce: 0.75, tilt: -0.04, earUp: true }
+    );
+    addSparkles([
+      [-1.88, 3.24, 0.3, 0.85], [-1.10, 3.76, -0.3, 0.6], [0.22, 3.38, 0.5, 0.7],
+      [1.40, 3.82, -0.2, 0.75], [1.90, 3.06, 0.4, 0.95],
     ]);
     duoCam(13.9, 2.76);
   },
